@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Scan QR Code</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
+  <style>
+    /* =========================================
+       THEME VARIABLES
+       ========================================= */
+    :root {
+      /* Background Gradient */
+      --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      
+      /* Glassmorphism Card */
+      --card: rgba(255, 255, 255, 0.85);
+      --card-border: rgba(255, 255, 255, 0.6);
+      
+      /* Text Colors */
+      --text: #1e293b;
+      --muted: #64748b;
+      
+      /* Vibrant Colors */
+      --primary-1: #6366f1;
+      --primary-2: #4f46e5;
+      --primary-3: #4338ca;
+      
+      --success-1: #34d399;
+      --success-2: #10b981;
+      --success-3: #059669;
+      
+      --warn-1: #fbbf24;
+      --warn-2: #f59e0b;
+      --warn-3: #d97706;
+      
+      --gray-1: #cbd5e1;
+      --gray-2: #94a3b8;
+      --gray-3: #64748b;
+      
+      --pink-1: #f472b6;
+      --pink-2: #ec4899;
+      --pink-3: #db2777;
+
+      /* Status Badges */
+      --ok-bg: #d1fae5; --ok: #065f46;
+      --err-bg: #fee2e2; --err: #991b1b;
+      --info-bg: #dbeafe; --info: #1e40af;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      padding: 1.25rem;
+      font-family: 'Kanit', sans-serif;
+      color: var(--text);
+      background-attachment: fixed;
+    }
+
+    .app-container {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    
+    /* --- Header --- */
+    .header {
+      text-align: center;
+      margin-bottom: 1rem;
+      padding-top: 0.5rem;
+    }
+    
+    .header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+      color: #1e1b4b;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+    
+    .header .subtitle {
+      color: #475569;
+      font-size: 1rem;
+      font-weight: 400;
+    }
+    
+    /* --- Glassmorphism Card --- */
+    .main-card {
+      background: var(--card);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 2px solid var(--card-border);
+      border-radius: 24px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    /* --- Vibrant Buttons --- */
+    .btn-neo {
+      border: none;
+      border-radius: 50px;
+      padding: 14px 20px;
+      color: #fff;
+      font-family: 'Kanit', sans-serif;
+      font-weight: 500;
+      font-size: 1rem;
+      letter-spacing: 0.5px;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 100%;
+      cursor: pointer;
+    }
+    
+    .btn-neo:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      filter: brightness(1.05);
+    }
+    
+    .btn-neo:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .btn-neo-lg { padding: 16px 20px; font-size: 1.1rem; font-weight: 600; }
+    .btn-neo-sm { padding: 8px 16px; border-radius: 12px; font-size: 0.9rem; }
+
+    /* Gradients */
+    .neo-primary { background: linear-gradient(135deg, var(--primary-1), var(--primary-3)); }
+    .neo-success { background: linear-gradient(135deg, var(--success-1), var(--success-3)); }
+    .neo-warn    { background: linear-gradient(135deg, var(--warn-1), var(--warn-3)); }
+    .neo-gray    { background: linear-gradient(135deg, var(--gray-1), var(--gray-3)); color: #334155; }
+    .neo-pink    { background: linear-gradient(135deg, var(--pink-1), var(--pink-3)); }
+
+    /* Outline Buttons */
+    .btn-neo-outline {
+      background: #fff;
+      color: var(--text);
+      border: 2px solid transparent;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .btn-neo-outline.neo-primary { border-color: var(--primary-2); color: var(--primary-3); }
+    .btn-neo-outline.neo-success { border-color: var(--success-2); color: var(--success-3); }
+    .btn-neo-outline.neo-warn    { border-color: var(--warn-2); color: var(--warn-3); }
+    .btn-neo-outline.neo-gray    { border-color: var(--gray-2); color: var(--gray-3); }
+
+    .menu-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
+    @media (max-width: 420px){ .menu-wrap { grid-template-columns: 1fr; } }
+
+    /* --- Form Inputs --- */
+    .form-control {
+      border-radius: 16px;
+      border: 2px solid #e2e8f0;
+      padding: 1.2rem 1rem;
+      font-size: 1rem;
+      background: rgba(255,255,255,0.9);
+      transition: all 0.2s;
+    }
+    .form-control:focus {
+      border-color: var(--primary-2);
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      background: #fff;
+    }
+    ::placeholder { color: #94a3b8; font-weight: 300; }
+
+    /* --- Camera --- */
+    #camera-box, #reader { display: none; }
+    #camera-box {
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 4px solid var(--primary-2);
+      background: #000;
+      margin-bottom: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    #reader { width: 100%; }
+    
+    .scan-overlay {
+      position: absolute; inset: 20%;
+      border-radius: 1rem;
+      box-shadow: 0 0 0 400px rgba(0,0,0,0.5);
+      border: 2px solid rgba(255,255,255,0.8);
+      pointer-events: none;
+    }
+    .scan-line {
+      position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      background: var(--success-1);
+      box-shadow: 0 0 10px var(--success-1);
+      animation: scan-anim 2s ease-in-out infinite;
+    }
+    @keyframes scan-anim {
+      0% { top: 0; opacity: 0; }
+      50% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    .cam-tools {
+      position: absolute; right: 10px; bottom: 10px;
+      display: none; gap: 8px; align-items: center;
+      background: rgba(0,0,0,0.6); 
+      border-radius: 50px; padding: 8px 12px; z-index: 5;
+      backdrop-filter: blur(4px);
+    }
+    .cam-tools button { color: #fff !important; border-color: #fff !important; }
+    .cam-tools input[type="range"] { width: 100px; accent-color: var(--primary-1); }
+
+    /* --- Results & Lists --- */
+    .result-item {
+      display: flex; align-items: baseline; margin-bottom: 0.8rem;
+      padding-bottom: 0.5rem; border-bottom: 1px dashed #e2e8f0;
+    }
+    .result-item:last-child { border-bottom: none; }
+    .result-item b { width: 120px; color: var(--muted); font-weight: 400; font-size: 0.95rem; }
+    .result-item span { font-weight: 600; color: var(--text); flex: 1; }
+    #v-process { color: var(--primary-2); font-weight: 700 !important; font-size: 1.1rem; }
+
+    /* Toasts */
+    #status-toast {
+      display: none; border-radius: 16px; padding: 1rem;
+      font-weight: 600; margin-top: 1rem; text-align: center;
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    
+    #status-toast.show { display: block; }
+    #status-toast.success { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); }
+    #status-toast.error { background: var(--err-bg); color: var(--err); border: 1px solid var(--err); }
+    #status-toast.info { background: var(--info-bg); color: var(--info); border: 1px solid var(--info); }
+
+    #result-card, #action-buttons, #save-section, #review-section { display: none; }
+    .quantity-group { display: flex; gap: 16px; }
+    @media (max-width: 420px){ .quantity-group { flex-direction: column; } }
+
+    .btn-row { display: flex; gap: 12px; }
+    .btn-row > * { flex: 1; }
+
+    /* Stock List */
+    .stock-vert { margin-top: 0.5rem; }
+    .stock-vert .kv {
+      display: flex; align-items: stretch;
+      border: 1px solid #f1f5f9; border-radius: 16px;
+      overflow: hidden; margin-bottom: 0.8rem; background: #fff;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+    }
+    /* --- แก้ไขข้อ 2: เปลี่ยนพื้นหลังหัวข้อเป็นสีเหลืองเข้มขึ้น --- */
+    .stock-vert .k {
+      flex: 0 0 140px;
+      /* เปลี่ยนจาก #fef9c3 เป็น #fde047 (สีเหลืองสดใสขึ้น) */
+      background: #fde047; 
+      color: #713f12; /* สีน้าตาลเข้มเพื่อให้ตัดกับสีเหลือง อ่านง่าย */
+      font-weight: 600; /* เพิ่มความหนาตัวอักษรอีกนิด */
+      display: flex; align-items: center; justify-content: flex-end;
+      padding: 0.8rem; text-align: right;
+      border-right: 1px solid #f1f5f9;
+    }
+    .stock-vert .v {
+      flex: 1;
+      padding: 0.8rem; font-weight: 600; color: var(--text);
+      background: #ffffff; word-break: break-word;
+      display: flex; align-items: center;
+    }
+    
+    /* Input placeholders */
+    input::placeholder { font-size: 0.95rem; opacity: 0.6; }
+    
+    /* Report Log */
+    .report-log {
+      border: 1px solid #e2e8f0; border-radius: 18px; background: rgba(255,255,255,0.6);
+      padding: 12px 16px; margin-bottom: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      transition: transform 0.2s;
+    }
+    .report-log:hover { transform: translateY(-2px); background: #fff; }
+    
+    /* --- แก้ไขข้อ 4: ปรับ Report เป็นเรียงบรรทัดเดียว (Vertical) --- */
+    .report-grid { 
+      /* display: grid; grid-template-columns: 1fr 1fr; <-- ยกเลิก Grid */
+      display: flex; 
+      flex-direction: column; /* เรียงแนวตั้ง */
+      gap: 6px; 
+    }
+    /* @media (max-width: 420px){ .report-grid { grid-template-columns: 1fr; } } <-- ไม่ต้องใช้แล้วเพราะเป็น column เสมอ */
+    
+    .badge {
+      display: inline-block; padding: 0.35rem 0.8rem;
+      border-radius: 50px; font-weight: 600; font-size: 0.8rem;
+      letter-spacing: 0.3px;
+    }
+    .badge.proc { background: var(--info-bg); color: var(--info); }
+    .badge.menu { background: #fef3c7; color: #92400e; }
+    .muted { color: var(--muted); font-weight: 400; font-size: 0.9rem; margin-right: 4px; }
+
+    #loading-text {
+      display: none; text-align: center; margin-top: 15px;
+      color: var(--primary-2); font-weight: 500;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <header class="header">
+      <img src="https://drive.google.com/thumbnail?id=1udz3iuDkZYJvcOtDUKF8RRnYfSx_4M5P&sz=w300"
+        alt="Company Logo"
+        style="width: 80px; height: auto; margin: 0 auto 10px; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"
+        referrerpolicy="no-referrer">
+        
+      <h1 id="main-title">Scan QR Code <span style="font-size:0.6em; color:var(--primary-1); vertical-align:middle;">V.TEST</span></h1>
+      <p class="subtitle" id="subtitle">เลือกเมนูเพื่อเริ่มทำงาน</p>
+    </header>
+
+    <main class="main-card">
+
+      <div id="camera-box" style="display:none;">
+        <div id="reader"></div>
+        <div class="scan-overlay"><div class="scan-line"></div></div>
+        <div id="camera-toolbar" class="cam-tools">
+          <button id="torch-btn" class="btn-neo btn-neo-sm btn-neo-outline" style="width:auto; background:transparent;">🔦 ไฟฉาย</button>
+          <input id="zoom-range" type="range" min="1" max="3" step="0.1">
+        </div>
+      </div>
+
+      <div id="menu-section" class="menu-wrap">
+        <button id="menu-start"  class="btn-neo btn-neo-lg neo-primary">✏️ เริ่มการทำงาน</button>
+        <button id="menu-finish" class="btn-neo btn-neo-lg neo-success">👌 เสร็จการทำงาน</button>
+        <button id="menu-ship"   class="btn-neo btn-neo-lg neo-warn">🚚 ส่งสินค้า</button>
+        <button id="menu-stock"  class="btn-neo btn-neo-lg neo-gray">📦 เช็ค Stock</button>
+        <button id="menu-report" class="btn-neo btn-neo-lg neo-primary">📋 รายงานผลิต</button>
+        <button id="menu-overview" class="btn-neo btn-neo-lg neo-pink">📊 ภาพรวมทั้งหมด</button>
+      </div>
+
+      <div id="start-item-section" class="mt-2" style="display:none;">
+        <h5 id="start-item-title" class="font-weight-bold mb-4 text-center" style="color:var(--primary-3);">
+          <span style="margin-right:6px;">✏️</span>เริ่มการทำงาน
+        </h5>
+        <div class="form-group mb-4">
+          <input id="start-item-input" type="text"
+                 class="form-control"
+                 placeholder="สแกน หรือพิมพ์ ITEM Code..." autocomplete="off">
+        </div>
+        <div class="btn-row mb-3">
+          <button id="start-item-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
+          <button id="start-item-search-btn" class="btn-neo neo-primary">🔍 ดึงข้อมูล</button>
+        </div>
+        <div class="text-center mt-4">
+          <button id="start-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
+        </div>
+      </div>
+
+      <div id="start-wrap" class="text-center mb-3" style="display:none;">
+        <button id="start-btn" class="btn-neo btn-neo-lg neo-primary">เริ่มสแกน Item</button>
+        <div class="mt-2">
+          <button id="back-home-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
+        </div>
+      </div>
+
+      <div id="result-card" class="mt-2">
+        <h5 class="font-weight-bold mb-3" style="color:var(--success-2);">✔️ ข้อมูลที่พบ</h5>
+        <div class="result-item"><b>ITEM</b><span id="v-item"></span></div>
+        <div class="result-item"><b>NAME PART</b><span id="v-name"></span></div>
+        <div class="result-item"><b>MODEL</b><span id="v-model"></span></div>
+        <div class="result-item"><b>DRAWING</b><span id="v-drawing"></span></div>
+        <hr style="border-top: 1px dashed #cbd5e1;">
+        <div class="result-item"><b>PROCESS</b><span id="v-process">รอสแกน...</span></div>
+      </div>
+
+      <div id="action-buttons" class="mt-4">
+        <button id="scan-process-btn" class="btn-neo neo-gray btn-neo-lg mb-3">
+          📷 ขั้นตอนต่อไป: สแกน Process
+        </button>
+
+        <div class="mt-2 w-100">
+          <input id="manual-process-input" type="text"
+                 class="form-control"
+                 placeholder="หรือพิมพ์ชื่อ Process แล้วกดยืนยัน"
+                 autocomplete="off">
+          <div class="text-right mt-2">
+            <button id="manual-process-submit-btn"
+                    class="btn-neo btn-neo-sm btn-neo-outline neo-primary"
+                    style="width:auto;">
+              ยืนยัน Process
+            </button>
+          </div>
+        </div>
+
+        <button id="rescan-item-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray mt-4 w-100">
+          สแกน Item ใหม่
+        </button>
+      </div>
+
+      <div id="save-section" class="mt-4">
+        <div class="quantity-group">
+          <div class="form-group w-50">
+            <label class="font-weight-bold" style="color:var(--success-2)">งานดี (OK)</label>
+            <input id="quantity-good" type="number" min="0" class="form-control text-center font-weight-bold" placeholder="0">
+          </div>
+          <div class="form-group w-50">
+            <label class="font-weight-bold" style="color:var(--err)">งานเสีย (NG)</label>
+            <input id="quantity-ng" type="number" min="0" class="form-control text-center font-weight-bold" placeholder="0">
+          </div>
+        </div>
+        <div class="mt-2">
+          <button id="scan-name-btn" class="btn-neo btn-neo-lg neo-primary mb-3">
+            📷 ขั้นตอนต่อไป: สแกน Name
+          </button>
+
+          <div class="mt-2 w-100">
+            <input id="manual-name-input" type="text"
+                   class="form-control"
+                   placeholder="หรือพิมพ์ชื่อผู้บันทึกแล้วกดยืนยัน"
+                   autocomplete="off">
+            <div class="text-right mt-2">
+              <button id="manual-name-submit-btn"
+                      class="btn-neo btn-neo-sm btn-neo-outline neo-primary"
+                      style="width:auto;">
+                  ยืนยัน Name
+              </button>
+            </div>
+          </div>
+
+          <div class="btn-row mt-4">
+            <button id="rescan-process-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray">สแกน Process ใหม่</button>
+            <button id="rescan-all-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-warn">เริ่มใหม่ทั้งหมด</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="review-section" class="mt-3">
+        <h5 class="font-weight-bold mb-3" style="color:var(--primary-2);">🔎 ตรวจสอบก่อนบันทึก</h5>
+        <div id="review-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
+        <div class="result-item"><b>PROCESS</b><span id="rv-process"></span></div>
+        <div class="result-item"><b style="color:var(--success-2)">งานดี</b><span id="rv-good"></span></div>
+        <div class="result-item"><b style="color:var(--err)">งานเสีย</b><span id="rv-ng"></span></div>
+        <div class="result-item"><b>ผู้บันทึก</b><span id="rv-scanname"></span></div>
+        <div class="mt-4">
+          <button id="confirm-save-btn" class="btn-neo btn-neo-lg neo-success mb-3">✅ ยืนยันบันทึก</button>
+          <div class="btn-row">
+            <button id="back-to-edit-btn" class="btn-neo btn-neo-outline neo-gray">แก้จำนวน</button>
+            <button id="rescan-name-btn" class="btn-neo btn-neo-outline neo-gray">สแกน Name ใหม่</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="ship-section" class="mt-2" style="display:none;">
+        <div class="d-flex align-items-center justify-content-center mb-4">
+          <span style="font-size:28px; margin-right:8px;">🚚</span>
+          <h4 class="font-weight-bold mb-0" style="color:var(--warn-3);">ส่งสินค้า</h4>
+        </div>
+
+        <div id="ship-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
+
+        <div class="form-group mb-3">
+          <input id="ship-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดดึงข้อมูล" autocomplete="off">
+        </div>
+        <div class="btn-row mb-4">
+          <button id="ship-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
+          <button id="ship-submit-btn" class="btn-neo neo-primary">ดึงข้อมูล</button>
+        </div>
+
+        <div class="form-group mb-3">
+          <input id="ship-name-input" type="text" class="form-control" placeholder="สแกนชื่อ หรือพิมพ์ชื่อ" autocomplete="off">
+        </div>
+        <div class="btn-row mb-4">
+          <button id="ship-name-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกนชื่อ</button>
+          <button id="ship-clear-name-btn" class="btn-neo btn-neo-outline neo-gray">ล้างชื่อ</button>
+        </div>
+
+        <div id="ship-result" style="display:none;">
+          <div class="stock-vert">
+            <div class="kv"><div class="k">ITEM</div>             <div class="v" id="ship-ITEM"></div></div>
+            <div class="kv"><div class="k">NAME PART</div>        <div class="v" id="ship-NAME"></div></div>
+            <div class="kv"><div class="k">MODEL</div>            <div class="v" id="ship-MODEL"></div></div>
+            <div class="kv"><div class="k">DRAWING</div>          <div class="v" id="ship-DRAWING"></div></div>
+            <div class="kv"><div class="k" style="color:var(--success-2)">Finished Goods</div>   <div class="v font-weight-bold" id="ship-FG" style="color:var(--success-2); font-size:1.1em;"></div></div>
+          </div>
+          <div class="form-group mt-3">
+            <label class="font-weight-bold">จำนวนที่ส่ง</label>
+            <input id="ship-qty" type="number" min="1" class="form-control font-weight-bold text-center" placeholder="0" style="font-size:1.2rem;">
+          </div>
+          <div class="text-right">
+            <button id="ship-review-btn" class="btn-neo neo-primary" style="width:100%;">ตรวจสอบก่อนยืนยัน</button>
+          </div>
+        </div>
+
+        <div id="ship-review" class="mt-3" style="display:none;">
+          <h6 class="font-weight-bold mb-3 text-center" style="color:var(--warn-3);">🔎 ตรวจสอบก่อนยืนยัน</h6>
+          <div class="result-item"><b>ITEM</b><span id="ship-rv-item"></span></div>
+          <div class="result-item"><b>NAME PART</b><span id="ship-rv-name"></span></div>
+          <div class="result-item"><b>MODEL</b><span id="ship-rv-model"></span></div>
+          <div class="result-item"><b>DRAWING</b><span id="ship-rv-drawing"></span></div>
+          <div class="result-item"><b>ผู้ส่ง</b><span id="ship-rv-sender"></span></div>
+          <div class="result-item"><b>จำนวนส่ง</b><span id="ship-rv-qty" style="color:var(--warn-2); font-size:1.2em;"></span></div>
+          <div class="btn-row mt-4">
+            <button id="ship-confirm-btn" class="btn-neo btn-neo-lg neo-success">✅ ยืนยันส่งสินค้า</button>
+            <button id="ship-edit-btn" class="btn-neo btn-neo-outline neo-gray">แก้ไข</button>
+          </div>
+        </div>
+
+        <div class="text-center mt-4">
+          <button id="ship-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
+        </div>
+      </div>
+
+      <div id="stock-section" class="mt-2" style="display:none;">
+        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--gray-3);">📦 ตรวจเช็ค Stock</h5>
+        <div class="form-group mb-3">
+          <input id="stock-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดค้นหา" autocomplete="off">
+        </div>
+        <div class="btn-row mb-4">
+          <button id="stock-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
+          <button id="stock-search-btn" class="btn-neo neo-primary">🔍 ค้นหา</button>
+        </div>
+        <div id="stock-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
+        <div id="stock-result" style="display:none;">
+          <div class="stock-vert">
+            <div class="kv"><div class="k">ITEM</div>            <div class="v" id="s-ITEM"></div></div>
+            <div class="kv"><div class="k">NAME PART</div>       <div class="v" id="s-NAME_PART"></div></div>
+            <div class="kv"><div class="k">MODEL</div>           <div class="v" id="s-MODEL"></div></div>
+            <div class="kv"><div class="k">DRAWING</div>         <div class="v" id="s-DRAWING"></div></div>
+            <div class="kv"><div class="k">Receiving</div>       <div class="v" id="s-RECEIVING"></div></div>
+            <div class="kv"><div class="k">Cutting</div>         <div class="v" id="s-CUTTING"></div></div>
+            <div class="kv"><div class="k">Milling</div>         <div class="v" id="s-MILLING"></div></div>
+            <div class="kv"><div class="k">CNC</div>             <div class="v" id="s-CNC"></div></div>
+            <div class="kv"><div class="k">Grinding</div>        <div class="v" id="s-GRINDING"></div></div>
+            <div class="kv"><div class="k" style="color:var(--success-2)">Finished Goods</div> <div class="v" id="s-FINISH_GOODS" style="color:var(--success-2); font-weight:800;"></div></div>
+            <div class="kv"><div class="k" style="color:var(--err)">NG</div>              <div class="v" id="s-NG" style="color:var(--err)"></div></div>
+            <div class="kv"><div class="k">Total</div>           <div class="v font-weight-bold" id="s-TOTAL"></div></div>
+          </div>
+        </div>
+        <div class="text-center mt-4">
+          <button id="stock-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
+        </div>
+      </div>
+
+      <div id="report-section" class="mt-2" style="display:none;">
+        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--primary-2);">📋 รายงานการผลิต</h5>
+        <div class="form-group mb-3">
+          <input id="report-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดค้นหา" autocomplete="off">
+        </div>
+        <div class="btn-row mb-4">
+          <button id="report-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
+          <button id="report-search-btn" class="btn-neo neo-primary">🔍 ค้นหา</button>
+        </div>
+
+        <div id="report-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
+
+        <div id="report-head" class="stock-vert" style="display:none;">
+          <div class="kv"><div class="k">ITEM</div>       <div class="v" id="rp-ITEM"></div></div>
+          <div class="kv"><div class="k">NAME PART</div> <div class="v" id="rp-NAME"></div></div>
+          <div class="kv"><div class="k">MODEL</div>      <div class="v" id="rp-MODEL"></div></div>
+          <div class="kv"><div class="k">DRAWING</div>    <div class="v" id="rp-DRAW"></div></div>
+        </div>
+
+        <div id="report-list" class="mt-3" style="display:none;"></div>
+
+        <div class="text-center mt-4">
+          <button id="report-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
+        </div>
+      </div>
+
+      <div id="status-toast"></div>
+      <div id="loading-text">⏳ กำลังโหลดข้อมูล...</div>
+    </main>
+  </div>
+
+<script>
+// =================================================================
+  //  บล็อกพิเศษ: สะพานเชื่อมคำสั่ง (Polyfill) สำหรับย้ายเว็บไปไว้โฮสต์นอก
+  //  ช่วยให้โค้ดระบบเดิมทำงานได้ทันที โดยไม่ต้องแก้ไข Logic การทำงานด้านล่างเลยค่ะ
+  // =================================================================
+  
+  // 1. ให้พี่นำ URL ของ Web App ที่ได้จากการกด Deploy ใน Google Apps Script มาใส่ตรงนี้แทนนะคะ
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz7YnuQaxvPB0aRbzVsPud-1pdmDuINbPL2wMdrL-ZR0jg3-f7iaU4977HQCBfvRTZDog/exec";
+
+  // 2. จำลองระบบคำสั่งเดิมของ Google เพื่อให้โค้ดเก่าข้างล่างทำงานได้ปกติ
+  window.google = {
+    script: {
+      run: {
+        withSuccessHandler: function(successCallback) {
+          return {
+            withFailureHandler: function(failureCallback) {
+              return makeRunner(successCallback, failureCallback);
+            },
+            ...makeRunner(successCallback, () => {})
+          };
+        }
+      }
+    }
+  };
+
+  function makeRunner(success, failure) {
+    const runner = {};
+    // รายชื่อฟังก์ชันเดิมในไฟล์ .gs ของพี่
+    const functions = ['getItemDetails', 'getStockByItem', 'saveDataRow', 'shipGoods', 'getProductionLogsByItem'];
+    
+    functions.forEach(funcName => {
+      runner[funcName] = function(...args) {
+        // ยิงข้อมูลไปที่ Google Sheets ของพี่ผ่านระบบออนไลน์
+        fetch(WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ functionName: funcName, arguments: args }),
+          headers: { 'Content-Type': 'text/plain' }
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            failure(new Error(data.error)); // ถ้าหลังบ้านฟ้อง Error
+          } else {
+            success(data.result); // ถ้าสำเร็จ ส่งข้อมูลให้ระบบเดิมทำงานต่อ
+          }
+        })
+        .catch(err => failure(err));
+      };
+    });
+    return runner;
+  }
+  // =================================================================
+  //  จบส่วนสะพานเชื่อม (โค้ดเดิมด้านล่างของพี่จะเริ่มต่อตรงนี้ได้เลยค๊า)
+  // =================================================================
+
+  const normU = s => String(s || '').trim().toUpperCase().replace(/[\s\-]+/g, '_');
+  const mapProc = p => {
+    const x = normU(p);
+    return (x === 'FINISHED_GOODS') ? 'FINISH_GOODS' : x;
+  };
+  function prettyProc(key){
+    const k = normU(key);
+    const map = {
+      RECEIVING:'Receiving',
+      CUTTING:'Cutting',
+      MILLING:'Milling',
+      CNC:'CNC',
+      GRINDING:'Grinding',
+      FINISH_GOODS:'Finished Goods',
+      SHIP:'Ship'
+    };
+    return map[k] || key;
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const SCAN_DEBOUNCE_MS = 400;
+    let lastHit = 0;
+    const now = () => (performance && performance.now ? performance.now() : Date.now());
+    const $ = s => document.querySelector(s);
+
+    const ui = {
+      menuSection:$('#menu-section'),
+      menuStart:$('#menu-start'),
+      menuFinish:$('#menu-finish'),
+      menuShip:$('#menu-ship'),
+      menuStock:$('#menu-stock'),
+      menuReport:$('#menu-report'),
+      menuOverview:$('#menu-overview'), // เพิ่ม selector
+
+      startItemSection:$('#start-item-section'),
+      startItemTitle:$('#start-item-title'),
+      startItemInput:$('#start-item-input'),
+      startItemScanBtn:$('#start-item-scan-btn'),
+      startItemSearchBtn:$('#start-item-search-btn'),
+      startBackBtn:$('#start-back-btn'),
+
+      startWrap:$('#start-wrap'),
+      startBtn:$('#start-btn'),
+      backHomeBtn:$('#back-home-btn'),
+
+      cameraBox:$('#camera-box'),
+      reader:$('#reader'),
+      cameraFooter:document.getElementById('camera-footer'),
+      scanBackHomeBtn:document.getElementById('scan-back-home-btn'),
+
+      resultCard:$('#result-card'),
+      actionButtons:$('#action-buttons'),
+      saveSection:$('#save-section'),
+      reviewSection:$('#review-section'),
+      statusToast:$('#status-toast'),
+      reviewError:$('#review-error'),
+
+      vItem:$('#v-item'),
+      vName:$('#v-name'),
+      vModel:$('#v-model'),
+      vDrawing:$('#v-drawing'),
+      vProcess:$('#v-process'),
+
+      qGood:$('#quantity-good'),
+      qNg:$('#quantity-ng'),
+
+      rvProcess:$('#rv-process'),
+      rvGood:$('#rv-good'),
+      rvNg:$('#rv-ng'),
+      rvScanName:$('#rv-scanname'),
+
+      scanProcessBtn:$('#scan-process-btn'),
+      rescanItemBtn:$('#rescan-item-btn'),
+      scanNameBtn:$('#scan-name-btn'),
+      confirmSaveBtn:$('#confirm-save-btn'),
+      backToEditBtn:$('#back-to-edit-btn'),
+      rescanNameBtn:$('#rescan-name-btn'),
+      rescanAllBtn:$('#rescan-all-btn'),
+      rescanProcessBtn:$('#rescan-process-btn'),
+
+      manualProcessInput:$('#manual-process-input'),
+      manualProcessSubmitBtn:$('#manual-process-submit-btn'),
+
+      manualNameInput:$('#manual-name-input'),
+      manualNameSubmitBtn:$('#manual-name-submit-btn'),
+
+      subtitle:document.getElementById('subtitle'),
+
+      // Ship
+      shipSection:document.getElementById('ship-section'),
+      shipInput:document.getElementById('ship-item-input'),
+      shipScan:document.getElementById('ship-scan-btn'),
+      shipSubmit:document.getElementById('ship-submit-btn'),
+      shipBackBtn:document.getElementById('ship-back-btn'),
+      shipError:document.getElementById('ship-error'),
+      shipResult:document.getElementById('ship-result'),
+      shipQty:document.getElementById('ship-qty'),
+      shipFG:document.getElementById('ship-FG'),
+      shipKvItem:document.getElementById('ship-ITEM'),
+      shipKvName:document.getElementById('ship-NAME'),
+      shipKvModel:document.getElementById('ship-MODEL'),
+      shipKvDraw:document.getElementById('ship-DRAWING'),
+      shipReview:document.getElementById('ship-review'),
+      shipReviewBtn:document.getElementById('ship-review-btn'),
+      shipConfirmBtn:document.getElementById('ship-confirm-btn'),
+      shipEditBtn:document.getElementById('ship-edit-btn'),
+      shipRvItem:document.getElementById('ship-rv-item'),
+      shipRvName:document.getElementById('ship-rv-name'),
+      shipRvModel:document.getElementById('ship-rv-model'),
+      shipRvDraw:document.getElementById('ship-rv-drawing'),
+      shipRvQty:document.getElementById('ship-rv-qty'),
+      shipNameInput:document.getElementById('ship-name-input'),
+      shipNameScan:document.getElementById('ship-name-scan-btn'),
+      shipNameClear:document.getElementById('ship-clear-name-btn'),
+      shipRvSender:document.getElementById('ship-rv-sender'),
+
+      // Stock
+      stockSection:document.getElementById('stock-section'),
+      stockInput:document.getElementById('stock-item-input'),
+      stockSearch:document.getElementById('stock-search-btn'),
+      stockScan:document.getElementById('stock-scan-btn'),
+      stockError:document.getElementById('stock-error'),
+      stockResult:document.getElementById('stock-result'),
+      stockBackBtn:document.getElementById('stock-back-btn'),
+
+      // Report
+      reportSection:document.getElementById('report-section'),
+      reportInput:document.getElementById('report-item-input'),
+      reportScan:document.getElementById('report-scan-btn'),
+      reportSearch:document.getElementById('report-search-btn'),
+      reportBackBtn:document.getElementById('report-back-btn'),
+      reportError:document.getElementById('report-error'),
+      reportHead:document.getElementById('report-head'),
+      rpITEM:document.getElementById('rp-ITEM'),
+      rpNAME:document.getElementById('rp-NAME'),
+      rpMODEL:document.getElementById('rp-MODEL'),
+      rpDRAW:document.getElementById('rp-DRAW'),
+      reportList:document.getElementById('report-list'),
+
+      // loading text
+      loadingText:document.getElementById('loading-text'),
+    };
+    ui.menuSection.style.display = 'grid';
+
+    const state = {
+      operationMode:null,
+      currentScanMode:'item',
+      currentItemData:null,
+      currentProcess:null,
+      goodQty:0,
+      ngQty:0,
+      currentName:'',
+      html5Qr:null,
+      isScanning:false,
+      isStockMode:false,
+      itemLookupPending:false,
+      shipData:null
+    };
+
+    function showToast(m, t='info', d=3000){
+      ui.statusToast.textContent = m;
+      ui.statusToast.className = '';
+      ui.statusToast.classList.add(t,'show');
+      if(d>0){
+        setTimeout(()=>ui.statusToast.classList.remove('show'), d);
+      }
+    }
+
+    function showLoading(show, text='กำลังโหลดข้อมูล...'){
+      if(!ui.loadingText) return;
+      if(show){
+        ui.loadingText.textContent = text;
+        ui.loadingText.style.display = 'block';
+      }else{
+        ui.loadingText.style.display = 'none';
+      }
+    }
+
+    function playBeep(){
+      try{
+        const c = new (window.AudioContext||window.webkitAudioContext)();
+        const o = c.createOscillator();
+        const g = c.createGain();
+        o.connect(g); g.connect(c.destination);
+        o.type='sine'; o.frequency.value=880; g.gain.value=.05;
+        o.start();
+        setTimeout(()=>{o.stop();c.close();},120);
+      }catch(e){}
+    }
+
+    // ===== เมนูหลัก =====
+    ui.menuStart.addEventListener('click', async ()=>{
+      await stopScanner();
+      state.operationMode = 'start';
+      enterStartItemPage();
+    });
+
+    ui.menuFinish.addEventListener('click', async ()=>{
+      await stopScanner();
+      state.operationMode = 'finish';
+      enterFlowFinish();
+    });
+
+    ui.menuShip.addEventListener('click', async ()=>{
+      await stopScanner();
+      enterShipPage();
+    });
+
+    ui.menuStock.addEventListener('click', async ()=>{
+      await stopScanner();
+      enterStockPage();
+    });
+
+    ui.menuReport.addEventListener('click', async ()=>{
+      await stopScanner();
+      enterReportPage();
+    });
+    
+    // Event สำหรับเมนูใหม่: ภาพรวมการผลิตทั้งหมด
+    ui.menuOverview.addEventListener('click', async ()=>{
+       await stopScanner();
+       // ลิงก์ไปยัง URL ที่ระบุ
+       window.top.location.href = 'https://script.google.com/macros/s/AKfycbxJmpCYI0l3G9soo8ZAjWDCEygJAbPp8YV-REQS2FgIMb0DnU9r02V9908b6ERlITYB/exec';
+    });
+
+    // ===== Start mode =====
+    function enterStartItemPage(){
+      resetOnlyState();
+      ui.menuSection.style.display='none';
+      ui.startWrap.style.display='none';
+      ui.shipSection && (ui.shipSection.style.display='none');
+      ui.stockSection && (ui.stockSection.style.display='none');
+      ui.reportSection && (ui.reportSection.style.display='none');
+
+      if(ui.startItemTitle){
+        ui.startItemTitle.innerHTML = '<span style="margin-right:6px;">✏️</span>เริ่มการทำงาน';
+      }
+      ui.startItemInput.placeholder = 'กดปุ่มสแกน ITEM หรือใส่ ITEM กดดึงข้อมูล';
+      ui.startItemInput.value='';
+      ui.startItemSection.style.display='block';
+      ui.subtitle.textContent='โหมด: เริ่มการทำงาน';
+      ui.startItemInput.focus();
+    }
+
+    ui.startBackBtn.addEventListener('click', async ()=>{
+      await resetAll();
+    });
+
+    function lookupItemAndProceed(code){
+      const c = String(code || '').trim();
+      if(!c){
+        showToast('กรุณากรอกหรือสแกน ITEM','error');
+        return;
+      }
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(d=>{
+          showLoading(false);
+          if(!d){
+            showToast('ไม่พบ ITEM นี้ในระบบ','error',2500);
+            return;
+          }
+          ui.startItemSection.style.display='none';
+          onItemDataSuccess(d);
+        })
+        .withFailureHandler(err=>{
+          showLoading(false);
+          showToast('ดึงข้อมูลไม่สำเร็จ: ' + (err && err.message ? err.message : err),'error',5000);
+        })
+        .getItemDetails(c);
+    }
+
+    ui.startItemSearchBtn.addEventListener('click', ()=>{
+      lookupItemAndProceed(ui.startItemInput.value);
+    });
+
+    ui.startItemInput.addEventListener('keydown', e=>{
+      if(e.key === 'Enter') lookupItemAndProceed(ui.startItemInput.value);
+    });
+
+    ui.startItemScanBtn.addEventListener('click', ()=>{
+      state.currentScanMode = 'startItem';
+      startScanner();
+    });
+
+    // ===== Finish mode (ใช้ layout แบบรูปที่ 2) =====
+    function enterFlowFinish(){
+      resetOnlyState();
+      ui.menuSection.style.display='none';
+      ui.shipSection && (ui.shipSection.style.display='none');
+      ui.stockSection && (ui.stockSection.style.display='none');
+      ui.reportSection && (ui.reportSection.style.display='none');
+      ui.startWrap.style.display='none';
+
+      if(ui.startItemTitle){
+        ui.startItemTitle.innerHTML = '<span style="margin-right:6px;">👌</span>เสร็จการทำงาน';
+      }
+      ui.startItemInput.placeholder = 'กดปุ่มสแกน ITEM หรือใส่ ITEM กดดึงข้อมูล';
+      ui.startItemInput.value='';
+      ui.startItemSection.style.display='block';
+      ui.subtitle.textContent='โหมด: เสร็จการทำงาน';
+      ui.startItemInput.focus();
+    }
+
+    // (startBtn/backHomeBtn อยู่แต่ไม่ถูกเรียกเพราะ startWrap ไม่ถูกแสดง)
+
+    // ===== Ship =====
+    function enterShipPage(){
+      resetOnlyState();
+      ui.menuSection.style.display='none';
+      ui.startItemSection.style.display='none';
+      ui.startWrap.style.display='none';
+      ui.stockSection && (ui.stockSection.style.display='none');
+      ui.reportSection && (ui.reportSection.style.display='none');
+      ui.shipSection.style.display='block';
+      ui.subtitle.textContent='โหมด: ส่งสินค้า';
+
+      ui.shipError.style.display='none';
+      ui.shipResult.style.display='none';
+      ui.shipReview.style.display='none';
+      ui.shipInput.value='';
+      ui.shipQty.value='';
+      ui.shipNameInput.value='';
+      ui.shipRvSender.textContent='';
+      state.shipData=null;
+      ui.shipInput.focus();
+    }
+
+    ui.shipSubmit.addEventListener('click', ()=>{
+      const code = (ui.shipInput.value || '').trim();
+      if(!code){
+        ui.shipError.textContent='กรุณาใส่ ITEM';
+        ui.shipError.style.display='block';
+        ui.shipResult.style.display='none';
+        return;
+      }
+      ui.shipError.style.display='none';
+      showToast('กำลังดึงข้อมูล...','info',1200);
+
+      google.script.run
+        .withSuccessHandler(res=>{
+          if(!res){
+            ui.shipError.textContent='ไม่พบ ITEM นี้ในระบบ';
+            ui.shipError.style.display='block';
+            ui.shipResult.style.display='none';
+            return;
+          }
+          state.shipData = res;
+          fillShipView(res);
+          ui.shipResult.style.display='block';
+          ui.shipReview.style.display='none';
+        })
+        .withFailureHandler(err=>{
+          ui.shipError.textContent='ดึงข้อมูลไม่สำเร็จ: ' + (err && err.message ? err.message : err);
+          ui.shipError.style.display='block';
+          ui.shipResult.style.display='none';
+        })
+        .getStockByItem(code);
+    });
+
+    function fillShipView(d){
+      ui.shipKvItem.textContent  = d.ITEM || '';
+      ui.shipKvName.textContent  = d.NAME_PART || '';
+      ui.shipKvModel.textContent = d.MODEL || '';
+      ui.shipKvDraw.textContent  = d.DRAWING || '';
+      ui.shipFG.textContent      = d.FINISH_GOODS || 0;
+    }
+
+    ui.shipReviewBtn.addEventListener('click', ()=>{
+      if(!state.shipData){
+        showToast('ยังไม่ได้ดึงข้อมูล ITEM','error');
+        return;
+      }
+      const fg = Number(state.shipData.FINISH_GOODS || 0);
+      const q  = parseInt(ui.shipQty.value,10) || 0;
+      const sender = (ui.shipNameInput.value || '').trim();
+
+      if(q <= 0){ showToast('กรุณากรอกจำนวนที่ส่ง (>0)','error'); return; }
+      if(q > fg){ showToast(`จำนวนส่งมากกว่าที่มี (${fg})`,'error'); return; }
+      if(!sender){ showToast('กรุณากรอก/สแกนชื่อผู้ส่ง','error'); return; }
+
+      ui.shipRvItem.textContent    = state.shipData.ITEM || '';
+      ui.shipRvName.textContent    = state.shipData.NAME_PART || '';
+      ui.shipRvModel.textContent  = state.shipData.MODEL || '';
+      ui.shipRvDraw.textContent    = state.shipData.DRAWING || '';
+      ui.shipRvQty.textContent     = q;
+      ui.shipRvSender.textContent = sender;
+
+      ui.shipReview.style.display='block';
+      ui.shipResult.style.display='none';
+    });
+
+    ui.shipConfirmBtn.addEventListener('click', ()=>{
+      if(!state.shipData){
+        showToast('ยังไม่มีข้อมูล ITEM','error');
+        return;
+      }
+      const q = parseInt(ui.shipQty.value,10) || 0;
+      const sender = (ui.shipNameInput.value || '').trim();
+      if(q <= 0){ showToast('จำนวนส่งไม่ถูกต้อง','error'); return; }
+      if(!sender){ showToast('กรุณากรอก/สแกนชื่อผู้ส่ง','error'); return; }
+
+      showToast('กำลังบันทึกการส่งสินค้า...','info',0);
+      google.script.run
+        .withSuccessHandler(res=>{
+          showToast(res && res.message ? res.message : 'ส่งสินค้าเรียบร้อย','success',2500);
+          resetAll();
+        })
+        .withFailureHandler(err=>{
+          showToast('ส่งสินค้าไม่สำเร็จ: ' + (err && err.message ? err.message : err),'error',5000);
+          ui.shipReview.style.display='block';
+        })
+        .shipGoods(state.shipData.ITEM, q, sender);
+    });
+
+    ui.shipEditBtn.addEventListener('click', ()=>{
+      ui.shipReview.style.display='none';
+      ui.shipResult.style.display='block';
+      ui.shipQty.focus();
+    });
+
+    ui.shipScan.addEventListener('click', ()=>{
+      state.currentScanMode='shipItem';
+      startScanner();
+    });
+    ui.shipNameScan.addEventListener('click', ()=>{
+      state.currentScanMode='shipName';
+      startScanner();
+    });
+    ui.shipNameClear.addEventListener('click', ()=>{
+      ui.shipNameInput.value='';
+      ui.shipNameInput.focus();
+    });
+    ui.shipBackBtn.addEventListener('click', async ()=>{
+      await resetAll();
+    });
+
+    // ===== Stock =====
+    function enterStockPage(){
+      resetOnlyState();
+      state.isStockMode = true;
+      ui.menuSection.style.display='none';
+      ui.startItemSection.style.display='none';
+      ui.startWrap.style.display='none';
+      ui.shipSection && (ui.shipSection.style.display='none');
+      ui.reportSection && (ui.reportSection.style.display='none');
+      ui.stockSection.style.display='block';
+      ui.subtitle.textContent='โหมด: ตรวจเช็ค Stock';
+      ui.stockError.style.display='none';
+      ui.stockResult.style.display='none';
+      ui.stockInput.value='';
+      ui.stockInput.focus();
+    }
+
+    async function leaveStockPage(){
+      state.isStockMode = false;
+      await stopScanner();
+      ui.stockSection.style.display='none';
+      ui.menuSection.style.display='grid';
+      ui.subtitle.textContent='เลือกเมนูการทำงาน';
+    }
+
+    function fillStockView(d){
+      const set = (id,v)=>{ document.getElementById(id).textContent = (v ?? ''); };
+      set('s-ITEM',d.ITEM);
+      set('s-NAME_PART',d.NAME_PART);
+      set('s-MODEL',d.MODEL);
+      set('s-DRAWING',d.DRAWING);
+      set('s-RECEIVING',d.RECEIVING);
+      set('s-CUTTING',d.CUTTING);
+      set('s-MILLING',d.MILLING);
+      set('s-CNC',d.CNC);
+      set('s-GRINDING',d.GRINDING);
+      set('s-FINISH_GOODS',d.FINISH_GOODS);
+      set('s-NG',d.NG);
+      set('s-TOTAL',d.TOTAL);
+    }
+
+    function doStockSearch(item){
+      const code = (item || '').trim();
+      if(!code){
+        ui.stockError.textContent='กรุณากรอก ITEM';
+        ui.stockError.style.display='block';
+        ui.stockResult.style.display='none';
+        return;
+      }
+      ui.stockError.style.display='none';
+      showToast('กำลังค้นหา...','info',1200);
+
+      google.script.run
+        .withSuccessHandler(res=>{
+          if(!res){
+            ui.stockError.textContent='ไม่พบ ITEM นี้ในระบบ';
+            ui.stockError.style.display='block';
+            ui.stockResult.style.display='none';
+            return;
+          }
+          fillStockView(res);
+          ui.stockResult.style.display='block';
+        })
+        .withFailureHandler(err=>{
+          ui.stockError.textContent='ค้นหาไม่สำเร็จ: ' + (err && err.message ? err.message : err);
+          ui.stockError.style.display='block';
+          ui.stockResult.style.display='none';
+        })
+        .getStockByItem(code);
+    }
+
+    ui.stockSearch.addEventListener('click', ()=>doStockSearch(ui.stockInput.value));
+    ui.stockInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doStockSearch(ui.stockInput.value); });
+    ui.stockScan.addEventListener('click', ()=>{
+      state.currentScanMode='stockItem';
+      startScanner();
+    });
+    ui.stockBackBtn.addEventListener('click', async ()=>{ await leaveStockPage(); });
+
+    // ===== Report =====
+    function enterReportPage(){
+      resetOnlyState();
+      ui.menuSection.style.display='none';
+      ui.startItemSection.style.display='none';
+      ui.startWrap.style.display='none';
+      ui.shipSection && (ui.shipSection.style.display='none');
+      ui.stockSection && (ui.stockSection.style.display='none');
+      ui.reportSection.style.display='block';
+      ui.subtitle.textContent='โหมด: ดูรายงานการผลิต';
+      ui.reportError.style.display='none';
+      ui.reportHead.style.display='none';
+      ui.reportList.style.display='none';
+      ui.reportInput.value='';
+      ui.reportInput.focus();
+    }
+
+    function renderReportList(list){
+      const el = ui.reportList;
+      el.innerHTML = '';
+      list.forEach(r=>{
+        const timeText = r.Timestamp ? formatDateTime(r.Timestamp) : '-';
+        const div = document.createElement('div');
+        div.className = 'report-log';
+        div.innerHTML = `
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="badge proc">${escapeHtml(prettyProc(r.Process || ''))}</span>
+            <span class="badge menu">${escapeHtml(r.Menu || '')}</span>
+          </div>
+          <div class="report-grid">
+            <div><span class="muted">Good:</span> <b style="color:var(--success-2)">${Number(r.Good||0)}</b></div>
+            <div><span class="muted">NG:</span> <b style="color:var(--err)">${Number(r.NG||0)}</b></div>
+            <div><span class="muted">Total:</span> <b>${Number(r.Total||0)}</b></div>
+            <div><span class="muted">Name:</span> <b>${escapeHtml(r.Name||'')}</b></div>
+            <div style="grid-column: span 2;"><span class="muted">Time:</span> <b style="font-size:0.9em">${timeText}</b></div>
+          </div>
+        `;
+        el.appendChild(div);
+      });
+    }
+
+    function formatDateTime(iso){
+      try{
+        const d = new Date(iso);
+        const pad = n=>String(n).padStart(2,'0');
+        return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      }catch(e){
+        return iso || '';
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]);
+    }
+
+    function doReportSearch(item){
+      const code = (item || '').trim();
+      if(!code){
+        ui.reportError.textContent='กรุณากรอกหรือสแกน ITEM';
+        ui.reportError.style.display='block';
+        ui.reportHead.style.display='none';
+        ui.reportList.style.display='none';
+        return;
+      }
+      ui.reportError.style.display='none';
+      showToast('กำลังดึงรายงาน...','info',1200);
+
+      google.script.run
+        .withSuccessHandler(res=>{
+          const info = res && res.itemInfo;
+          const logs = (res && res.logs) || [];
+          if(!info || logs.length === 0){
+            ui.reportError.textContent='ไม่พบรายงานการผลิตสำหรับ ITEM นี้';
+            ui.reportError.style.display='block';
+            ui.reportHead.style.display='none';
+            ui.reportList.style.display='none';
+            return;
+          }
+
+          ui.rpITEM.textContent = info.Item || '';
+          ui.rpNAME.textContent = info.NamePart || '';
+          ui.rpMODEL.textContent = info.Model || '';
+          ui.rpDRAW.textContent = info.Drawing || '';
+          ui.reportHead.style.display='block';
+
+          renderReportList(logs);
+          ui.reportList.style.display='block';
+        })
+        .withFailureHandler(err=>{
+          ui.reportError.textContent='ดึงรายงานไม่สำเร็จ: ' + (err && err.message ? err.message : err);
+          ui.reportError.style.display='block';
+          ui.reportHead.style.display='none';
+          ui.reportList.style.display='none';
+        })
+        .getProductionLogsByItem(code);
+    }
+
+    ui.reportSearch.addEventListener('click', ()=>doReportSearch(ui.reportInput.value));
+    ui.reportInput.addEventListener('keydown', e=>{ if(e.key==='Enter') doReportSearch(ui.reportInput.value); });
+    ui.reportScan.addEventListener('click', ()=>{
+      state.currentScanMode='reportItem';
+      startScanner();
+    });
+    ui.reportBackBtn.addEventListener('click', async ()=>{ await resetAll(); });
+
+    // ===== Camera / Scan =====
+    function ensureQrInstance(){
+      if(!state.html5Qr){
+        state.html5Qr = new Html5Qrcode("reader");
+      }
+    }
+
+    function getVideoTrack(){
+      const v = document.querySelector('#reader video');
+      return (v && v.srcObject && v.srcObject.getVideoTracks)
+        ? v.srcObject.getVideoTracks()[0]
+        : null;
+    }
+
+    function setupTorchAndZoomUI(show){
+      const tools = document.getElementById('camera-toolbar');
+      if(!tools) return;
+      tools.style.display = show ? 'flex' : 'none';
+
+      const track = getVideoTrack();
+      const torchBtn = document.getElementById('torch-btn');
+      const zoomRange = document.getElementById('zoom-range');
+
+      if(!track){
+        torchBtn.style.display='none';
+        zoomRange.style.display='none';
+        return;
+      }
+
+      const caps = (track.getCapabilities && track.getCapabilities()) || {};
+
+      if(caps.torch){
+        torchBtn.style.display='inline-flex';
+        let torchOn = false;
+        torchBtn.onclick = async ()=>{
+          try{
+            torchOn = !torchOn;
+            await track.applyConstraints({ advanced:[{ torch:torchOn }] });
+            torchBtn.textContent = torchOn ? '🚫 ปิดไฟ' : '🔦 ไฟฉาย';
+          }catch(e){}
+        };
+      }else{
+        torchBtn.style.display='none';
+      }
+
+      if(caps.zoom){
+        zoomRange.style.display='block';
+        zoomRange.min = caps.zoom.min ?? 1;
+        zoomRange.max = caps.zoom.max ?? 3;
+        zoomRange.step = caps.zoom.step ?? 0.1;
+        const current = (track.getSettings && track.getSettings().zoom) || zoomRange.min;
+        zoomRange.value = current;
+        zoomRange.oninput = async e=>{
+          try{
+            await track.applyConstraints({ advanced:[{ zoom:Number(e.target.value) }] });
+          }catch(err){}
+        };
+      }else{
+        zoomRange.style.display='none';
+      }
+    }
+
+    async function startScanner(){
+      await stopScanner();
+      ensureQrInstance();
+
+      if(ui.cameraBox){
+        ui.cameraBox.style.display='block';
+        ui.reader.style.display='block';
+        ui.cameraBox.scrollIntoView({ behavior:'smooth', block:'start' });
+      }
+
+      const isShipItem = (state.currentScanMode === 'shipItem');
+      const boxW = Math.min(480, (ui.cameraBox ? ui.cameraBox.clientWidth : 360) - 24);
+      const qrbox = isShipItem
+        ? { width:boxW, height:Math.max(70, Math.round(boxW*0.25)) }
+        : { width:Math.min(330,(ui.cameraBox ? ui.cameraBox.clientWidth : 360)-24), height:220 };
+
+      const formats = isShipItem
+        ? [
+            Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.CODE_39,
+            Html5QrcodeSupportedFormats.CODE_128,
+            Html5QrcodeSupportedFormats.EAN_13,
+            Html5QrcodeSupportedFormats.UPC_A
+          ]
+        : [Html5QrcodeSupportedFormats.QR_CODE];
+
+      const config = {
+        fps: 15,
+        aspectRatio: 1.7778,
+        qrbox,
+        formatsToSupport: formats,
+        ...(isShipItem
+          ? { experimentalFeatures: { useBarCodeDetectorIfSupported: true } }
+          : {})
+      };
+
+      const onScanSuccess = text => {
+        const t = now();
+        if(t - lastHit < SCAN_DEBOUNCE_MS) return;
+        lastHit = t;
+        playBeep();
+        onQrDecoded(text);
+      };
+
+      try{
+        await state.html5Qr.start({ facingMode:"environment" }, config, onScanSuccess, ()=>{});
+        state.isScanning = true;
+        showToast('เปิดกล้องแล้ว เริ่มสแกน...','info',1200);
+        setupTorchAndZoomUI(isShipItem);
+      }catch(err){
+        state.isScanning = false;
+        if(ui.cameraBox) ui.cameraBox.style.display='none';
+        if(ui.reader) ui.reader.style.display='none';
+        showToast('ไม่สามารถเปิดกล้องได้: ' + (err && err.message ? err.message : err),'error',5000);
+        setupTorchAndZoomUI(false);
+      }
+    }
+
+    async function stopScanner(){
+      try{
+        if(state.html5Qr && state.html5Qr.isScanning){
+          await state.html5Qr.stop();
+        }
+        if(state.html5Qr){
+          await state.html5Qr.clear();
+        }
+        const v = document.querySelector('#reader video');
+        if(v && v.srcObject){
+          try{ v.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
+          v.srcObject = null;
+        }
+      }catch(e){}
+      if(ui.reader) ui.reader.style.display='none';
+      if(ui.cameraBox) ui.cameraBox.style.display='none';
+      const tools = document.getElementById('camera-toolbar');
+      if(tools && tools.style) tools.style.display='none';
+      state.isScanning = false;
+    }
+
+    function onQrDecoded(text){
+      if(!text) return;
+
+      if(state.currentScanMode === 'startItem'){
+        stopScanner();
+        const code = String(text || '').trim();
+        if(!code){
+          showToast('QR ไม่ถูกต้อง','error');
+          return;
+        }
+        ui.startItemInput.value = code;
+        lookupItemAndProceed(code);
+        return;
+      }
+
+      if(state.currentScanMode === 'item'){
+        if(state.itemLookupPending) return;
+        state.itemLookupPending = true;
+        ui.subtitle.textContent='กำลังค้นหา ITEM...';
+        google.script.run
+          .withSuccessHandler(d=>{
+            state.itemLookupPending = false;
+            onItemDataSuccess(d);
+          })
+          .withFailureHandler(()=>{
+            state.itemLookupPending = false;
+            showToast('ค้นหา ITEM ไม่สำเร็จ','error',3000);
+          })
+          .getItemDetails(text);
+        return;
+      }
+
+      if(state.currentScanMode === 'process'){
+        stopScanner();
+        onProcessDataSuccess(text);
+        return;
+      }
+
+      if(state.currentScanMode === 'name'){
+        stopScanner();
+        onNameDataSuccess(text);
+        return;
+      }
+
+      if(state.currentScanMode === 'stockItem'){
+        stopScanner();
+        const code = String(text || '').trim();
+        ui.stockInput.value = code;
+        doStockSearch(code);
+        return;
+      }
+
+      if(state.currentScanMode === 'shipItem'){
+        stopScanner();
+        const code = String(text || '').trim();
+        ui.shipInput.value = code;
+        ui.shipSubmit.click();
+        return;
+      }
+
+      if(state.currentScanMode === 'shipName'){
+        stopScanner();
+        ui.shipNameInput.value = String(text || '').trim();
+        ui.shipNameInput.focus();
+        return;
+      }
+
+      if(state.currentScanMode === 'reportItem'){
+        stopScanner();
+        const code = String(text || '').trim();
+        ui.reportInput.value = code;
+        doReportSearch(code);
+        return;
+      }
+    }
+
+    // ===== Workflow Start/Finish =====
+    function onItemDataSuccess(d){
+      if(!d){
+        showToast('ไม่พบ ITEM ในระบบ','error',2500);
+        return;
+      }
+      stopScanner();
+      state.currentItemData = d;
+      ui.startItemSection && (ui.startItemSection.style.display='none');
+      ui.startWrap && (ui.startWrap.style.display='none');
+
+      ui.resultCard.style.display='block';
+      ui.actionButtons.style.display='block';
+
+      ui.vItem.textContent    = d.item || '';
+      ui.vName.textContent    = d.namePart || '';
+      ui.vModel.textContent   = d.model || '';
+      ui.vDrawing.textContent = d.drawing || '';
+
+      ui.subtitle.textContent='ตรวจสอบ แล้วสแกน / พิมพ์ Process ต่อไป';
+    }
+
+    function onProcessDataSuccess(p){
+      const Pkey = mapProc(p);
+      const okKeys = ['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS'];
+
+      if(!okKeys.includes(Pkey)){
+        ui.vProcess.textContent = 'รอสแกน...';
+        showToast('ไม่พบ Process นี้ในระบบ', 'error', 3000);
+        state.currentScanMode = 'process';
+        setTimeout(() => {
+          if (state.currentScanMode === 'process' && !state.currentProcess) {
+            startScanner();
+          }
+        }, 3000);
+        return;
+      }
+
+      state.currentProcess = Pkey;
+      ui.vProcess.textContent = prettyProc(Pkey);
+      ui.actionButtons.style.display='none';
+      ui.saveSection.style.display='block';
+      ui.qGood && ui.qGood.focus();
+      ui.subtitle.textContent='กรอกจำนวน แล้วกด "สแกน Name" หรือพิมพ์ชื่อ';
+    }
+
+    function onNameDataSuccess(name){
+      state.currentName = String(name || '').trim();
+      if(!state.currentName){
+        showToast('สแกน/กรอก Name ไม่สำเร็จ','error');
+        state.currentScanMode='name';
+        startScanner();
+        return;
+      }
+      fillReview();
+      if(ui.confirmSaveBtn) ui.confirmSaveBtn.disabled=false;
+      ui.saveSection.style.display='none';
+      ui.reviewSection.style.display='block';
+      ui.subtitle.textContent='ตรวจสอบ แล้วกด "ยืนยันบันทึก"';
+    }
+
+    function fillReview(){
+      state.goodQty = parseInt(ui.qGood.value,10) || 0;
+      state.ngQty   = parseInt(ui.qNg.value,10) || 0;
+      ui.rvProcess.textContent = prettyProc(state.currentProcess || '');
+      ui.rvGood.textContent    = state.goodQty;
+      ui.rvNg.textContent      = state.ngQty;
+      ui.rvScanName.textContent= state.currentName || '';
+      ui.reviewError.style.display='none';
+      ui.reviewError.textContent='';
+    }
+
+    function showInlineError(text){
+      ui.reviewError.textContent = text;
+      ui.reviewError.style.display='block';
+    }
+
+    function saveData(){
+      const g = state.goodQty;
+      const n = state.ngQty;
+      if(g < 0 || n < 0)       return showInlineError('จำนวนต้องไม่ติดลบ');
+      if(g + n <= 0)           return showInlineError('กรุณากรอกจำนวนอย่างน้อย 1 ชิ้น');
+      if(!state.currentItemData||!state.currentProcess) return showInlineError('ข้อมูลไม่ครบถ้วน');
+      if(!state.currentName)   return showInlineError('ยังไม่ได้สแกน/กรอก Name');
+      if(!state.operationMode) return showInlineError('ยังไม่ได้เลือกเมนูการทำงาน');
+
+      ui.confirmSaveBtn.disabled = true;
+      ui.reviewError.style.display='none';
+      ui.reviewError.textContent='';
+      showToast('กำลังบันทึกข้อมูล...','info',0);
+
+      const payload = {
+        ...state.currentItemData,
+        process:state.currentProcess,
+        goodQuantity:g,
+        ngQuantity:n,
+        name:state.currentName
+      };
+
+      google.script.run
+        .withSuccessHandler(m=>{
+          showToast(m,'success',2200);
+          resetAll();
+        })
+        .withFailureHandler(e=>{
+          const msg = (e && e.message) ? e.message : 'บันทึกไม่สำเร็จ';
+          showInlineError(msg);
+          showToast('บันทึกไม่สำเร็จ: ' + msg,'error',5000);
+          ui.confirmSaveBtn.disabled=false;
+        })
+        .saveDataRow(payload, state.operationMode);
+    }
+
+    async function resetOnlyState(){
+      ui.resultCard.style.display='none';
+      ui.actionButtons.style.display='none';
+      ui.saveSection.style.display='none';
+      ui.reviewSection.style.display='none';
+      ui.startItemSection && (ui.startItemSection.style.display='none');
+      ui.qGood && (ui.qGood.value='');
+      ui.qNg && (ui.qNg.value='');
+      ui.vProcess.textContent='รอสแกน...';
+      ui.reviewError.style.display='none';
+      ui.reviewError.textContent='';
+      ui.confirmSaveBtn && (ui.confirmSaveBtn.disabled=false);
+      ui.manualProcessInput && (ui.manualProcessInput.value='');
+      ui.manualNameInput && (ui.manualNameInput.value='');
+      showLoading(false);
+
+      state.currentScanMode='item';
+      state.currentItemData=null;
+      state.currentProcess=null;
+      state.goodQty=0;
+      state.ngQty=0;
+      state.currentName='';
+      state.itemLookupPending=false;
+
+      await stopScanner();
+    }
+
+    async function resetAll(){
+      await resetOnlyState();
+      state.operationMode=null;
+      ui.startWrap.style.display='none';
+      ui.shipSection && (ui.shipSection.style.display='none');
+      ui.stockSection && (ui.stockSection.style.display='none');
+      ui.reportSection && (ui.reportSection.style.display='none');
+      ui.menuSection.style.display='grid';
+      ui.subtitle.textContent='เลือกเมนูเพื่อเริ่มทำงาน';
+    }
+
+    async function resetForProcessScan(){
+      state.currentProcess=null;
+      ui.vProcess.textContent='รอสแกน...';
+      ui.manualProcessInput && (ui.manualProcessInput.value='');
+      state.currentScanMode='process';
+      await startScanner();
+    }
+
+    // ปุ่ม workflow
+    ui.scanProcessBtn.addEventListener('click', ()=>{
+      state.currentScanMode='process';
+      startScanner();
+    });
+
+    ui.rescanItemBtn.addEventListener('click', async ()=>{
+      await resetOnlyState();
+      if(state.operationMode === 'start'){
+        enterStartItemPage();
+      }else if(state.operationMode === 'finish'){
+        enterFlowFinish();
+      }else{
+        ui.menuSection.style.display='grid';
+        ui.subtitle.textContent='เลือกเมนูเพื่อเริ่มทำงาน';
+      }
+    });
+
+    if(ui.rescanAllBtn){
+      ui.rescanAllBtn.addEventListener('click', async ()=>{
+        await resetAll();
+      });
+    }
+
+    if(ui.rescanProcessBtn){
+      ui.rescanProcessBtn.addEventListener('click', async ()=>{
+        await resetForProcessScan();
+      });
+    }
+
+    if(ui.manualProcessSubmitBtn){
+      ui.manualProcessSubmitBtn.addEventListener('click', ()=>{
+        const val = (ui.manualProcessInput.value || '').trim();
+        if(!val){
+          showToast('กรุณาพิมพ์ Process หรือสแกน', 'error');
+          return;
+        }
+        onProcessDataSuccess(val);
+      });
+    }
+    if(ui.manualProcessInput){
+      ui.manualProcessInput.addEventListener('keydown', e=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          ui.manualProcessSubmitBtn && ui.manualProcessSubmitBtn.click();
+        }
+      });
+    }
+
+    if(ui.manualNameSubmitBtn){
+      ui.manualNameSubmitBtn.addEventListener('click', ()=>{
+        const val = (ui.manualNameInput.value || '').trim();
+        if(!val){
+          showToast('กรุณาพิมพ์ชื่อ หรือสแกน', 'error');
+          return;
+        }
+        onNameDataSuccess(val);
+      });
+    }
+    if(ui.manualNameInput){
+      ui.manualNameInput.addEventListener('keydown', e=>{
+        if(e.key === 'Enter'){
+          e.preventDefault();
+          ui.manualNameSubmitBtn && ui.manualNameSubmitBtn.click();
+        }
+      });
+    }
+
+    ui.scanNameBtn.addEventListener('click', async ()=>{
+      if(!state.currentItemData || !state.currentProcess){
+        showToast('ข้อมูลยังไม่ครบ','error');
+        return;
+      }
+      const g = parseInt(ui.qGood.value,10) || 0;
+      const n = parseInt(ui.qNg.value,10) || 0;
+      if(g < 0 || n < 0){ showToast('จำนวนต้องไม่ติดลบ','error'); return; }
+      if(g + n <= 0){ showToast('กรุณากรอกจำนวนอย่างน้อย 1 ชิ้น','error'); return; }
+      state.goodQty = g;
+      state.ngQty = n;
+      state.currentScanMode='name';
+      await startScanner();
+    });
+
+    ui.confirmSaveBtn.addEventListener('click', saveData);
+
+    ui.backToEditBtn.addEventListener('click', async ()=>{
+      ui.reviewSection.style.display='none';
+      ui.saveSection.style.display='block';
+      ui.reviewError.style.display='none';
+      ui.reviewError.textContent='';
+      ui.confirmSaveBtn && (ui.confirmSaveBtn.disabled=false);
+      ui.qGood && ui.qGood.focus();
+      await stopScanner();
+    });
+
+    ui.rescanNameBtn.addEventListener('click', async ()=>{
+      ui.reviewError.style.display='none';
+      ui.reviewError.textContent='';
+      ui.confirmSaveBtn && (ui.confirmSaveBtn.disabled=false);
+      state.currentScanMode='name';
+      await startScanner();
+    });
+
+    if(ui.scanBackHomeBtn){
+      ui.scanBackHomeBtn.addEventListener('click', async ()=>{ await resetAll(); });
+    }
+
+    document.addEventListener('visibilitychange', async ()=>{
+      if(document.hidden) await stopScanner();
+    });
+
+    window.addEventListener('beforeunload', ()=>{
+      stopScanner();
+    });
+  });
+</script>
+</body>
+</html>
