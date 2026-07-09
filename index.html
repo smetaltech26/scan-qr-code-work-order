@@ -11,56 +11,57 @@
   <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     /* =========================================
-       THEME VARIABLES
+       THEME VARIABLES - iOS LIQUID GLASS
        ========================================= */
     :root {
-      /* Background Gradient */
-      --bg-gradient: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+      /* Background: Light gray/blue iOS tone */
+      --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
       
       /* Glassmorphism Card */
-      --card: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(255, 255, 255, 0.6);
+      --card: rgba(255, 255, 255, 0.75);
+      --card-border: rgba(255, 255, 255, 0.9);
       
       /* Text Colors */
-      --text: #1e293b;
-      --muted: #64748b;
+      --text: #1d1d1f; /* Apple standard dark */
+      --muted: #86868b;
       
-      /* Vibrant Colors */
-      --primary-1: #6366f1;
-      --primary-2: #4f46e5;
-      --primary-3: #4338ca;
+      /* iOS Vibrant Colors */
+      --primary-1: #007aff; /* iOS Blue */
+      --primary-2: #006ce6;
+      --primary-3: #005bb5;
       
-      --success-1: #34d399;
-      --success-2: #10b981;
-      --success-3: #059669;
+      --success-1: #34c759; /* iOS Green */
+      --success-2: #2db34e;
+      --success-3: #249942;
       
-      --warn-1: #fbbf24;
-      --warn-2: #f59e0b;
-      --warn-3: #d97706;
+      --warn-1: #ff9500; /* iOS Orange */
+      --warn-2: #e68600;
+      --warn-3: #cc7700;
       
-      --gray-1: #cbd5e1;
-      --gray-2: #94a3b8;
-      --gray-3: #64748b;
+      --gray-1: #8e8e93; /* iOS Gray */
+      --gray-2: #7a7a7e;
+      --gray-3: #636366;
       
-      --pink-1: #f472b6;
-      --pink-2: #ec4899;
-      --pink-3: #db2777;
+      --pink-1: #ff2d55; /* iOS Pink */
+      --pink-2: #e6284c;
+      --pink-3: #cc2343;
 
       /* Status Badges */
-      --ok-bg: #d1fae5; --ok: #065f46;
-      --err-bg: #fee2e2; --err: #991b1b;
-      --info-bg: #dbeafe; --info: #1e40af;
+      --ok-bg: #e4f8eb; --ok: #249942;
+      --err-bg: #ffe9ea; --err: #cc2343;
+      --info-bg: #e6f2ff; --info: #005bb5;
     }
 
     body {
       background: var(--bg-gradient);
       min-height: 100vh;
       padding: 1.25rem;
-      font-family: 'Kanit', sans-serif;
+      font-family: 'Kanit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       color: var(--text);
       background-attachment: fixed;
     }
@@ -73,133 +74,140 @@
     /* --- Header --- */
     .header {
       text-align: center;
-      margin-bottom: 1rem;
+      margin-bottom: 1.5rem;
       padding-top: 0.5rem;
     }
     
     .header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
+      font-size: 1.8rem;
+      font-weight: 600;
       margin-bottom: 0.2rem;
-      color: #1e1b4b;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+      color: #1d1d1f;
+      letter-spacing: -0.5px;
     }
     
     .header .subtitle {
-      color: #475569;
+      color: var(--muted);
       font-size: 1rem;
       font-weight: 400;
     }
     
-    /* --- Glassmorphism Card --- */
+    /* --- Liquid Glass Card --- */
     .main-card {
       background: var(--card);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 2px solid var(--card-border);
-      border-radius: 24px;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--card-border);
+      border-radius: 32px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
       padding: 24px;
       margin-bottom: 30px;
     }
 
-    /* --- Vibrant Buttons --- */
+    /* --- iOS Buttons --- */
     .btn-neo {
       border: none;
-      border-radius: 50px;
+      border-radius: 20px;
       padding: 14px 20px;
       color: #fff;
-      font-family: 'Kanit', sans-serif;
+      font-family: 'Kanit', -apple-system, sans-serif;
       font-weight: 500;
-      font-size: 1rem;
-      letter-spacing: 0.5px;
+      font-size: 1.05rem;
+      letter-spacing: 0.3px;
       text-align: center;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 0.5rem;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+      transition: all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1);
       width: 100%;
       cursor: pointer;
     }
     
     .btn-neo:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      transform: scale(1.02);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
       filter: brightness(1.05);
     }
     
     .btn-neo:active {
-      transform: translateY(0);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      transform: scale(0.98);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
 
-    .btn-neo-lg { padding: 16px 20px; font-size: 1.1rem; font-weight: 600; }
-    .btn-neo-sm { padding: 8px 16px; border-radius: 12px; font-size: 0.9rem; }
+    .btn-neo-lg { padding: 16px 20px; font-size: 1.15rem; font-weight: 600; border-radius: 24px; }
+    .btn-neo-sm { padding: 10px 16px; border-radius: 16px; font-size: 0.95rem; }
 
-    /* Gradients */
-    .neo-primary { background: linear-gradient(135deg, var(--primary-1), var(--primary-3)); }
-    .neo-success { background: linear-gradient(135deg, var(--success-1), var(--success-3)); }
-    .neo-warn    { background: linear-gradient(135deg, var(--warn-1), var(--warn-3)); }
-    .neo-gray    { background: linear-gradient(135deg, var(--gray-1), var(--gray-3)); color: #334155; }
-    .neo-pink    { background: linear-gradient(135deg, var(--pink-1), var(--pink-3)); }
+    /* Solid Colors */
+    .neo-primary { background: var(--primary-1); }
+    .neo-success { background: var(--success-1); }
+    .neo-warn    { background: var(--warn-1); }
+    .neo-gray    { background: var(--gray-1); }
+    .neo-pink    { background: var(--pink-1); }
 
-    /* Outline Buttons */
+    /* Outline Buttons (Frosted iOS Style) */
     .btn-neo-outline {
-      background: #fff;
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
       color: var(--text);
-      border: 2px solid transparent;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      border: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
     }
-    .btn-neo-outline.neo-primary { border-color: var(--primary-2); color: var(--primary-3); }
-    .btn-neo-outline.neo-success { border-color: var(--success-2); color: var(--success-3); }
-    .btn-neo-outline.neo-warn    { border-color: var(--warn-2); color: var(--warn-3); }
-    .btn-neo-outline.neo-gray    { border-color: var(--gray-2); color: var(--gray-3); }
+    .btn-neo-outline.neo-primary { color: var(--primary-1); }
+    .btn-neo-outline.neo-success { color: var(--success-1); }
+    .btn-neo-outline.neo-warn    { color: var(--warn-1); }
+    .btn-neo-outline.neo-gray    { color: var(--gray-3); }
 
     .menu-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 8px; }
     @media (max-width: 420px){ .menu-wrap { grid-template-columns: 1fr; } }
 
     /* --- Form Inputs --- */
     .form-control {
-      border-radius: 16px;
-      border: 2px solid #e2e8f0;
-      padding: 1.2rem 1rem;
-      font-size: 1rem;
-      background: rgba(255,255,255,0.9);
-      transition: all 0.2s;
+      border-radius: 18px;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+      padding: 1.2rem 1.2rem;
+      font-size: 1.05rem;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      color: var(--text);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
     }
     .form-control:focus {
-      border-color: var(--primary-2);
-      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      border-color: var(--primary-1);
+      box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.15), inset 0 2px 4px rgba(0,0,0,0.02);
       background: #fff;
+      outline: none;
     }
-    ::placeholder { color: #94a3b8; font-weight: 300; }
+    ::placeholder { color: #a1a1a6; font-weight: 400; }
 
     /* --- Camera --- */
     #camera-box, #reader { display: none; }
     #camera-box {
       position: relative;
-      border-radius: 20px;
+      border-radius: 28px;
       overflow: hidden;
-      border: 4px solid var(--primary-2);
+      border: 2px solid rgba(0,0,0,0.05);
       background: #000;
       margin-bottom: 16px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      box-shadow: 0 15px 30px rgba(0,0,0,0.15);
     }
     #reader { width: 100%; }
     
     .scan-overlay {
-      position: absolute; inset: 20%;
-      border-radius: 1rem;
-      box-shadow: 0 0 0 400px rgba(0,0,0,0.5);
+      position: absolute; inset: 15%;
+      border-radius: 1.5rem;
+      box-shadow: 0 0 0 400px rgba(0,0,0,0.4);
       border: 2px solid rgba(255,255,255,0.8);
       pointer-events: none;
     }
     .scan-line {
-      position: absolute; left: 0; right: 0; top: 0; height: 3px;
+      position: absolute; left: 0; right: 0; top: 0; height: 2px;
       background: var(--success-1);
-      box-shadow: 0 0 10px var(--success-1);
+      box-shadow: 0 0 12px var(--success-1);
       animation: scan-anim 2s ease-in-out infinite;
     }
     @keyframes scan-anim {
@@ -209,38 +217,45 @@
     }
 
     .cam-tools {
-      position: absolute; right: 10px; bottom: 10px;
+      position: absolute; right: 12px; bottom: 12px;
       display: none; gap: 8px; align-items: center;
-      background: rgba(0,0,0,0.6); 
-      border-radius: 50px; padding: 8px 12px; z-index: 5;
-      backdrop-filter: blur(4px);
+      background: rgba(30, 30, 30, 0.6); 
+      border-radius: 20px; padding: 10px 14px; z-index: 5;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
     }
-    .cam-tools button { color: #fff !important; border-color: #fff !important; }
-    .cam-tools input[type="range"] { width: 100px; accent-color: var(--primary-1); }
+    .cam-tools button { color: #fff !important; border-color: rgba(255,255,255,0.3) !important; background: rgba(255,255,255,0.1); }
+    .cam-tools input[type="range"] { width: 100px; accent-color: #fff; }
 
     /* --- Results & Lists --- */
     .result-item {
       display: flex; align-items: baseline; margin-bottom: 0.8rem;
-      padding-bottom: 0.5rem; border-bottom: 1px dashed #e2e8f0;
+      padding-bottom: 0.5rem; border-bottom: 1px solid rgba(0,0,0,0.05);
     }
     .result-item:last-child { border-bottom: none; }
-    .result-item b { width: 120px; color: var(--muted); font-weight: 400; font-size: 0.95rem; }
-    .result-item span { font-weight: 600; color: var(--text); flex: 1; }
-    #v-process { color: var(--primary-2); font-weight: 700 !important; font-size: 1.1rem; }
+    .result-item b { width: 120px; color: var(--muted); font-weight: 500; font-size: 0.95rem; }
+    .result-item span { font-weight: 500; color: var(--text); flex: 1; }
+    #v-process { color: var(--primary-1); font-weight: 600 !important; font-size: 1.1rem; }
 
-    /* Toasts */
+    /* Toasts - iOS Style */
     #status-toast {
-      display: none; border-radius: 16px; padding: 1rem;
-      font-weight: 600; margin-top: 1rem; text-align: center;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      display: none; border-radius: 20px; padding: 1rem 1.5rem;
+      font-weight: 500; margin-top: 1.5rem; text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
-    @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes popIn { 
+      0% { transform: translateY(20px) scale(0.9); opacity: 0; } 
+      100% { transform: translateY(0) scale(1); opacity: 1; } 
+    }
     
     #status-toast.show { display: block; }
-    #status-toast.success { background: var(--ok-bg); color: var(--ok); border: 1px solid var(--ok); }
-    #status-toast.error { background: var(--err-bg); color: var(--err); border: 1px solid var(--err); }
-    #status-toast.info { background: var(--info-bg); color: var(--info); border: 1px solid var(--info); }
+    #status-toast.success { background: rgba(52, 199, 89, 0.1); color: var(--success-3); border: 1px solid rgba(52, 199, 89, 0.3); }
+    #status-toast.error { background: rgba(255, 45, 85, 0.1); color: var(--pink-3); border: 1px solid rgba(255, 45, 85, 0.3); }
+    #status-toast.info { background: rgba(0, 122, 255, 0.1); color: var(--primary-3); border: 1px solid rgba(0, 122, 255, 0.3); }
 
     #result-card, #action-buttons, #save-section, #review-section { display: none; }
     .quantity-group { display: flex; gap: 16px; }
@@ -253,73 +268,87 @@
     .stock-vert { margin-top: 0.5rem; }
     .stock-vert .kv {
       display: flex; align-items: stretch;
-      border: 1px solid #f1f5f9; border-radius: 16px;
-      overflow: hidden; margin-bottom: 0.8rem; background: #fff;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+      border: 1px solid rgba(0,0,0,0.05); border-radius: 20px;
+      overflow: hidden; margin-bottom: 0.8rem; background: rgba(255,255,255,0.7);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
-    /* --- แก้ไขข้อ 2: เปลี่ยนพื้นหลังหัวข้อเป็นสีเหลืองเข้มขึ้น --- */
     .stock-vert .k {
       flex: 0 0 140px;
-      /* เปลี่ยนจาก #fef9c3 เป็น #fde047 (สีเหลืองสดใสขึ้น) */
-      background: #fde047; 
-      color: #713f12; /* สีน้าตาลเข้มเพื่อให้ตัดกับสีเหลือง อ่านง่าย */
-      font-weight: 600; /* เพิ่มความหนาตัวอักษรอีกนิด */
+      background: rgba(0,0,0,0.03); 
+      color: var(--muted); 
+      font-weight: 500; 
       display: flex; align-items: center; justify-content: flex-end;
-      padding: 0.8rem; text-align: right;
-      border-right: 1px solid #f1f5f9;
+      padding: 0.8rem 1rem; text-align: right;
+      border-right: 1px solid rgba(0,0,0,0.03);
     }
     .stock-vert .v {
       flex: 1;
-      padding: 0.8rem; font-weight: 600; color: var(--text);
-      background: #ffffff; word-break: break-word;
+      padding: 0.8rem 1rem; font-weight: 500; color: var(--text);
+      word-break: break-word;
       display: flex; align-items: center;
     }
     
     /* Input placeholders */
-    input::placeholder { font-size: 0.95rem; opacity: 0.6; }
+    input::placeholder { font-size: 0.95rem; opacity: 0.8; }
     
     /* Report Log */
     .report-log {
-      border: 1px solid #e2e8f0; border-radius: 18px; background: rgba(255,255,255,0.6);
-      padding: 12px 16px; margin-bottom: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
-      transition: transform 0.2s;
+      border: 1px solid rgba(0,0,0,0.05); border-radius: 22px; 
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      padding: 16px 20px; margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .report-log:hover { transform: translateY(-2px); background: #fff; }
+    .report-log:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.06); background: #fff; }
     
-    /* --- แก้ไขข้อ 4: ปรับ Report เป็นเรียงบรรทัดเดียว (Vertical) --- */
     .report-grid { 
-      /* display: grid; grid-template-columns: 1fr 1fr; <-- ยกเลิก Grid */
       display: flex; 
-      flex-direction: column; /* เรียงแนวตั้ง */
-      gap: 6px; 
+      flex-direction: column;
+      gap: 8px; 
     }
-    /* @media (max-width: 420px){ .report-grid { grid-template-columns: 1fr; } } <-- ไม่ต้องใช้แล้วเพราะเป็น column เสมอ */
     
     .badge {
-      display: inline-block; padding: 0.35rem 0.8rem;
-      border-radius: 50px; font-weight: 600; font-size: 0.8rem;
-      letter-spacing: 0.3px;
+      display: inline-block; padding: 0.4rem 0.9rem;
+      border-radius: 50px; font-weight: 500; font-size: 0.85rem;
+      letter-spacing: 0.2px;
     }
     .badge.proc { background: var(--info-bg); color: var(--info); }
-    .badge.menu { background: #fef3c7; color: #92400e; }
+    .badge.menu { background: rgba(255, 149, 0, 0.1); color: var(--warn-3); }
     .muted { color: var(--muted); font-weight: 400; font-size: 0.9rem; margin-right: 4px; }
 
     #loading-text {
       display: none; text-align: center; margin-top: 15px;
-      color: var(--primary-2); font-weight: 500;
+      color: var(--primary-1); font-weight: 500;
       animation: pulse 1.5s infinite;
     }
-    @keyframes pulse { 0% { opacity: 0.6; } 50% { opacity: 1; } 100% { opacity: 0.6; } }
+    @keyframes pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
 
+    /* Custom Scrollbar for iOS feel */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent; 
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0,0,0,0.15); 
+      border-radius: 10px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0,0,0,0.3); 
+    }
   </style>
 </head>
 <body>
   <div class="app-container">
     <header class="header">
-      <img src="https://drive.google.com/thumbnail?id=1udz3iuDkZYJvcOtDUKF8RRnYfSx_4M5P&sz=w300"
+      <img src="https://drive.google.com/thumbnail?id=1NN5A_nOU7IcLVCV_ooUqcsdeIV3s4OHQ&sz=w300"
         alt="Company Logo"
-        style="width: 80px; height: auto; margin: 0 auto 10px; display: block; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));"
+        style="width: 80px; height: auto; margin: 0 auto 10px; display: block; border-radius: 18px; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));"
         referrerpolicy="no-referrer">
         
       <h1 id="main-title">Scan QR Code <span style="font-size:0.6em; color:var(--primary-1); vertical-align:middle;">V.TEST</span></h1>
@@ -332,23 +361,23 @@
         <div id="reader"></div>
         <div class="scan-overlay"><div class="scan-line"></div></div>
         <div id="camera-toolbar" class="cam-tools">
-          <button id="torch-btn" class="btn-neo btn-neo-sm btn-neo-outline" style="width:auto; background:transparent;">🔦 ไฟฉาย</button>
+          <button id="torch-btn" class="btn-neo btn-neo-sm btn-neo-outline" style="width:auto; background:transparent;"><i class="bi bi-flashlight"></i> ไฟฉาย</button>
           <input id="zoom-range" type="range" min="1" max="3" step="0.1">
         </div>
       </div>
 
       <div id="menu-section" class="menu-wrap">
-        <button id="menu-start"  class="btn-neo btn-neo-lg neo-primary">✏️ เริ่มการทำงาน</button>
-        <button id="menu-finish" class="btn-neo btn-neo-lg neo-success">👌 เสร็จการทำงาน</button>
-        <button id="menu-ship"   class="btn-neo btn-neo-lg neo-warn">🚚 ส่งสินค้า</button>
-        <button id="menu-stock"  class="btn-neo btn-neo-lg neo-gray">📦 เช็ค Stock</button>
-        <button id="menu-report" class="btn-neo btn-neo-lg neo-primary">📋 รายงานผลิต</button>
-        <button id="menu-overview" class="btn-neo btn-neo-lg neo-pink">📊 ภาพรวมทั้งหมด</button>
+        <button id="menu-start"  class="btn-neo btn-neo-lg neo-primary"><i class="bi bi-pencil-square"></i> เริ่มการทำงาน</button>
+        <button id="menu-finish" class="btn-neo btn-neo-lg neo-success"><i class="bi bi-check-circle"></i> เสร็จการทำงาน</button>
+        <button id="menu-ship"   class="btn-neo btn-neo-lg neo-warn"><i class="bi bi-truck"></i> ส่งสินค้า</button>
+        <button id="menu-stock"  class="btn-neo btn-neo-lg neo-gray"><i class="bi bi-box-seam"></i> เช็ค Stock</button>
+        <button id="menu-report" class="btn-neo btn-neo-lg neo-primary"><i class="bi bi-clipboard-data"></i> รายงานผลิต</button>
+        <button id="menu-overview" class="btn-neo btn-neo-lg neo-pink"><i class="bi bi-bar-chart-fill"></i> ภาพรวมทั้งหมด</button>
       </div>
 
       <div id="start-item-section" class="mt-2" style="display:none;">
         <h5 id="start-item-title" class="font-weight-bold mb-4 text-center" style="color:var(--primary-3);">
-          <span style="margin-right:6px;">✏️</span>เริ่มการทำงาน
+          <span style="margin-right:6px;"><i class="bi bi-pencil-square"></i></span>เริ่มการทำงาน
         </h5>
         <div class="form-group mb-4">
           <input id="start-item-input" type="text"
@@ -356,8 +385,8 @@
                  placeholder="สแกน หรือพิมพ์ ITEM Code..." autocomplete="off">
         </div>
         <div class="btn-row mb-3">
-          <button id="start-item-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
-          <button id="start-item-search-btn" class="btn-neo neo-primary">🔍 ดึงข้อมูล</button>
+          <button id="start-item-scan-btn" class="btn-neo btn-neo-outline neo-primary"><i class="bi bi-camera"></i> สแกน</button>
+          <button id="start-item-search-btn" class="btn-neo neo-primary"><i class="bi bi-search"></i> ดึงข้อมูล</button>
         </div>
         <div class="text-center mt-4">
           <button id="start-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">กลับหน้าแรก</button>
@@ -372,7 +401,7 @@
       </div>
 
       <div id="result-card" class="mt-2">
-        <h5 class="font-weight-bold mb-3" style="color:var(--success-2);">✔️ ข้อมูลที่พบ</h5>
+        <h5 class="font-weight-bold mb-3" style="color:var(--success-2);"><i class="bi bi-check-circle-fill"></i> ข้อมูลที่พบ</h5>
         <div class="result-item"><b>ITEM</b><span id="v-item"></span></div>
         <div class="result-item"><b>NAME PART</b><span id="v-name"></span></div>
         <div class="result-item"><b>MODEL</b><span id="v-model"></span></div>
@@ -383,7 +412,7 @@
 
       <div id="action-buttons" class="mt-4">
         <button id="scan-process-btn" class="btn-neo neo-gray btn-neo-lg mb-3">
-          📷 ขั้นตอนต่อไป: สแกน Process
+          <i class="bi bi-camera"></i> ขั้นตอนต่อไป: สแกน Process
         </button>
 
         <div class="mt-2 w-100">
@@ -418,7 +447,7 @@
         </div>
         <div class="mt-2">
           <button id="scan-name-btn" class="btn-neo btn-neo-lg neo-primary mb-3">
-            📷 ขั้นตอนต่อไป: สแกน Name
+            <i class="bi bi-camera"></i> ขั้นตอนต่อไป: สแกน Name
           </button>
 
           <div class="mt-2 w-100">
@@ -443,14 +472,14 @@
       </div>
 
       <div id="review-section" class="mt-3">
-        <h5 class="font-weight-bold mb-3" style="color:var(--primary-2);">🔎 ตรวจสอบก่อนบันทึก</h5>
+        <h5 class="font-weight-bold mb-3" style="color:var(--primary-2);"><i class="bi bi-search"></i> ตรวจสอบก่อนบันทึก</h5>
         <div id="review-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
         <div class="result-item"><b>PROCESS</b><span id="rv-process"></span></div>
         <div class="result-item"><b style="color:var(--success-2)">งานดี</b><span id="rv-good"></span></div>
         <div class="result-item"><b style="color:var(--err)">งานเสีย</b><span id="rv-ng"></span></div>
         <div class="result-item"><b>ผู้บันทึก</b><span id="rv-scanname"></span></div>
         <div class="mt-4">
-          <button id="confirm-save-btn" class="btn-neo btn-neo-lg neo-success mb-3">✅ ยืนยันบันทึก</button>
+          <button id="confirm-save-btn" class="btn-neo btn-neo-lg neo-success mb-3"><i class="bi bi-check2-circle"></i> ยืนยันบันทึก</button>
           <div class="btn-row">
             <button id="back-to-edit-btn" class="btn-neo btn-neo-outline neo-gray">แก้จำนวน</button>
             <button id="rescan-name-btn" class="btn-neo btn-neo-outline neo-gray">สแกน Name ใหม่</button>
@@ -460,7 +489,7 @@
 
       <div id="ship-section" class="mt-2" style="display:none;">
         <div class="d-flex align-items-center justify-content-center mb-4">
-          <span style="font-size:28px; margin-right:8px;">🚚</span>
+          <span style="font-size:28px; margin-right:8px; color:var(--warn-3);"><i class="bi bi-truck"></i></span>
           <h4 class="font-weight-bold mb-0" style="color:var(--warn-3);">ส่งสินค้า</h4>
         </div>
 
@@ -470,7 +499,7 @@
           <input id="ship-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดดึงข้อมูล" autocomplete="off">
         </div>
         <div class="btn-row mb-4">
-          <button id="ship-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
+          <button id="ship-scan-btn" class="btn-neo btn-neo-outline neo-primary"><i class="bi bi-camera"></i> สแกน</button>
           <button id="ship-submit-btn" class="btn-neo neo-primary">ดึงข้อมูล</button>
         </div>
 
@@ -478,7 +507,7 @@
           <input id="ship-name-input" type="text" class="form-control" placeholder="สแกนชื่อ หรือพิมพ์ชื่อ" autocomplete="off">
         </div>
         <div class="btn-row mb-4">
-          <button id="ship-name-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกนชื่อ</button>
+          <button id="ship-name-scan-btn" class="btn-neo btn-neo-outline neo-primary"><i class="bi bi-camera"></i> สแกนชื่อ</button>
           <button id="ship-clear-name-btn" class="btn-neo btn-neo-outline neo-gray">ล้างชื่อ</button>
         </div>
 
@@ -500,7 +529,7 @@
         </div>
 
         <div id="ship-review" class="mt-3" style="display:none;">
-          <h6 class="font-weight-bold mb-3 text-center" style="color:var(--warn-3);">🔎 ตรวจสอบก่อนยืนยัน</h6>
+          <h6 class="font-weight-bold mb-3 text-center" style="color:var(--warn-3);"><i class="bi bi-search"></i> ตรวจสอบก่อนยืนยัน</h6>
           <div class="result-item"><b>ITEM</b><span id="ship-rv-item"></span></div>
           <div class="result-item"><b>NAME PART</b><span id="ship-rv-name"></span></div>
           <div class="result-item"><b>MODEL</b><span id="ship-rv-model"></span></div>
@@ -508,7 +537,7 @@
           <div class="result-item"><b>ผู้ส่ง</b><span id="ship-rv-sender"></span></div>
           <div class="result-item"><b>จำนวนส่ง</b><span id="ship-rv-qty" style="color:var(--warn-2); font-size:1.2em;"></span></div>
           <div class="btn-row mt-4">
-            <button id="ship-confirm-btn" class="btn-neo btn-neo-lg neo-success">✅ ยืนยันส่งสินค้า</button>
+            <button id="ship-confirm-btn" class="btn-neo btn-neo-lg neo-success"><i class="bi bi-check2-circle"></i> ยืนยันส่งสินค้า</button>
             <button id="ship-edit-btn" class="btn-neo btn-neo-outline neo-gray">แก้ไข</button>
           </div>
         </div>
@@ -519,13 +548,13 @@
       </div>
 
       <div id="stock-section" class="mt-2" style="display:none;">
-        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--gray-3);">📦 ตรวจเช็ค Stock</h5>
+        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--gray-3);"><i class="bi bi-box-seam"></i> ตรวจเช็ค Stock</h5>
         <div class="form-group mb-3">
           <input id="stock-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดค้นหา" autocomplete="off">
         </div>
         <div class="btn-row mb-4">
-          <button id="stock-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
-          <button id="stock-search-btn" class="btn-neo neo-primary">🔍 ค้นหา</button>
+          <button id="stock-scan-btn" class="btn-neo btn-neo-outline neo-primary"><i class="bi bi-camera"></i> สแกน</button>
+          <button id="stock-search-btn" class="btn-neo neo-primary"><i class="bi bi-search"></i> ค้นหา</button>
         </div>
         <div id="stock-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
         <div id="stock-result" style="display:none;">
@@ -550,13 +579,13 @@
       </div>
 
       <div id="report-section" class="mt-2" style="display:none;">
-        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--primary-2);">📋 รายงานการผลิต</h5>
+        <h5 class="font-weight-bold mb-3 text-center" style="color:var(--primary-2);"><i class="bi bi-clipboard-data"></i> รายงานการผลิต</h5>
         <div class="form-group mb-3">
           <input id="report-item-input" type="text" class="form-control" placeholder="สแกน ITEM หรือพิมพ์ ITEM กดค้นหา" autocomplete="off">
         </div>
         <div class="btn-row mb-4">
-          <button id="report-scan-btn" class="btn-neo btn-neo-outline neo-primary">📷 สแกน</button>
-          <button id="report-search-btn" class="btn-neo neo-primary">🔍 ค้นหา</button>
+          <button id="report-scan-btn" class="btn-neo btn-neo-outline neo-primary"><i class="bi bi-camera"></i> สแกน</button>
+          <button id="report-search-btn" class="btn-neo neo-primary"><i class="bi bi-search"></i> ค้นหา</button>
         </div>
 
         <div id="report-error" class="alert alert-danger" role="alert" style="display:none; border-radius:12px;"></div>
@@ -576,7 +605,7 @@
       </div>
 
       <div id="status-toast"></div>
-      <div id="loading-text">⏳ กำลังโหลดข้อมูล...</div>
+      <div id="loading-text"><i class="bi bi-hourglass-split"></i> กำลังโหลดข้อมูล...</div>
     </main>
   </div>
 
@@ -870,7 +899,7 @@
       ui.reportSection && (ui.reportSection.style.display='none');
 
       if(ui.startItemTitle){
-        ui.startItemTitle.innerHTML = '<span style="margin-right:6px;">✏️</span>เริ่มการทำงาน';
+        ui.startItemTitle.innerHTML = '<span style="margin-right:6px;"><i class="bi bi-pencil-square"></i></span>เริ่มการทำงาน';
       }
       ui.startItemInput.placeholder = 'กดปุ่มสแกน ITEM หรือใส่ ITEM กดดึงข้อมูล';
       ui.startItemInput.value='';
@@ -1294,7 +1323,7 @@
           try{
             torchOn = !torchOn;
             await track.applyConstraints({ advanced:[{ torch:torchOn }] });
-            torchBtn.textContent = torchOn ? '🚫 ปิดไฟ' : '🔦 ไฟฉาย';
+            torchBtn.textContent = torchOn ? '🚫 ปิดไฟ' : '<i class="bi bi-flashlight"></i> ไฟฉาย';
           }catch(e){}
         };
       }else{
