@@ -516,8 +516,8 @@ function doPost(e) {
 // =====================================================================
 
 const AI_CONFIG = {
-  // 1. อัปเดต Key และตั้งค่าอีเมลผู้รับ
-  GEMINI_API_KEY: 'AIzaSyC4J3HVQyGZ-wlXL73TMCQhCuJYk9iZY7E', 
+  // 1. ดึงคีย์จาก Script Properties เพื่อความปลอดภัย ไม่ให้คีย์หลุดไปบน GitHub
+  GEMINI_API_KEY: PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'), 
   REPORT_EMAILS: [
     'pongsak@smetaltech.co.th',
     'therayut@smetaltech.co.th',
