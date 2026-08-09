@@ -988,6 +988,14 @@
     .menu-wrap {
       column-gap: 18px;
       row-gap: 24px;
+      transform-origin: center top;
+      transition: opacity 0.16s ease, transform 0.16s ease;
+    }
+
+    .menu-wrap.home-returning {
+      opacity: 0;
+      transform: translateY(6px) scale(0.995);
+      pointer-events: none;
     }
 
     .menu-wrap .btn-neo {
@@ -1988,6 +1996,16 @@
       loadingText:document.getElementById('loading-text'),
     };
     let homeMenuFitFrame = null;
+    let homeReturnSequence = 0;
+    let homeReturnRevealTimer = null;
+    let homeReturnGuardUntil = 0;
+
+    function applyHomeScrollTop(){
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+
     function queueHomeMenuFit(){
       if(typeof window.requestAnimationFrame !== 'function'){
         window.setTimeout(fitHomeMenuToViewport, 0);
@@ -2002,11 +2020,18 @@
       });
     }
 
+    function handleHomeViewportChange(){
+      if(Date.now() < homeReturnGuardUntil){
+        applyHomeScrollTop();
+      }
+      queueHomeMenuFit();
+    }
+
     ui.menuSection.style.display = 'grid';
     queueHomeMenuFit();
-    window.addEventListener('resize', queueHomeMenuFit, { passive:true });
+    window.addEventListener('resize', handleHomeViewportChange, { passive:true });
     if(window.visualViewport){
-      window.visualViewport.addEventListener('resize', queueHomeMenuFit, { passive:true });
+      window.visualViewport.addEventListener('resize', handleHomeViewportChange, { passive:true });
     }
 
     const state = {
@@ -2870,19 +2895,23 @@
     }
 
     function scrollHomeToTop(){
+      const returnSequence = ++homeReturnSequence;
+      homeReturnGuardUntil = Date.now() + 700;
+      if(homeReturnRevealTimer !== null){
+        window.clearTimeout(homeReturnRevealTimer);
+        homeReturnRevealTimer = null;
+      }
+
+      ui.menuSection.classList.add('home-returning');
+      ui.menuSection.style.removeProperty('--home-menu-height');
+
       const activeElement = document.activeElement;
       if(activeElement && activeElement !== document.body && typeof activeElement.blur === 'function'){
         activeElement.blur();
       }
 
-      const applyScroll = ()=>{
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-      };
-
       const settleHome = ()=>{
-        applyScroll();
+        applyHomeScrollTop();
         fitHomeMenuToViewport();
       };
 
@@ -2895,6 +2924,13 @@
       }else{
         window.setTimeout(settleHome, 0);
       }
+
+      homeReturnRevealTimer = window.setTimeout(()=>{
+        if(returnSequence !== homeReturnSequence) return;
+        settleHome();
+        ui.menuSection.classList.remove('home-returning');
+        homeReturnRevealTimer = null;
+      }, 160);
     }
 
     async function resetAll(){
