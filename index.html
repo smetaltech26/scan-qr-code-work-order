@@ -1988,6 +1988,7 @@
       loadingText:document.getElementById('loading-text'),
     };
     let homeMenuFitFrame = null;
+
     function queueHomeMenuFit(){
       if(typeof window.requestAnimationFrame !== 'function'){
         window.setTimeout(fitHomeMenuToViewport, 0);
