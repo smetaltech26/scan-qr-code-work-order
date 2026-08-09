@@ -2305,6 +2305,7 @@
       ui.stockSection.style.display='none';
       ui.menuSection.style.display='grid';
       ui.subtitle.textContent='เลือกเมนูการทำงาน';
+      scrollHomeToTop();
     }
 
     function fillStockView(d){
@@ -2823,6 +2824,29 @@
       await stopScanner();
     }
 
+    function scrollHomeToTop(){
+      const activeElement = document.activeElement;
+      if(activeElement && activeElement !== document.body && typeof activeElement.blur === 'function'){
+        activeElement.blur();
+      }
+
+      const applyScroll = ()=>{
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      };
+
+      applyScroll();
+      if(typeof window.requestAnimationFrame === 'function'){
+        window.requestAnimationFrame(()=>{
+          applyScroll();
+          window.requestAnimationFrame(applyScroll);
+        });
+      }else{
+        window.setTimeout(applyScroll, 0);
+      }
+    }
+
     async function resetAll(){
       await resetOnlyState();
       state.operationMode=null;
@@ -2832,6 +2856,7 @@
       ui.reportSection && (ui.reportSection.style.display='none');
       ui.menuSection.style.display='grid';
       ui.subtitle.textContent='เลือกเมนูเพื่อเริ่มทำงาน';
+      scrollHomeToTop();
     }
 
     async function resetForProcessScan(){
