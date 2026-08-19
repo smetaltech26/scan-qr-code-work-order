@@ -20,42 +20,71 @@
        Visual layer only - application logic stays unchanged
        ========================================= */
     :root {
-      --bg-gradient: linear-gradient(145deg, #f8fbff 0%, #ffffff 44%, #f7fbff 100%);
-      --card: rgba(255, 255, 255, 0.86);
-      --card-border: rgba(255, 255, 255, 0.96);
+      /* =========================================
+         HIGH VISIBILITY & VIBRANT THEME
+         สดใส สีเด่น เห็นชัดเจน
+         ========================================= */
+      --bg-gradient: linear-gradient(135deg, #1A2980 0%, #26D0CE 100%); /* Bright Deep Blue to Cyan */
+      --card: rgba(255, 255, 255, 0.98);
+      --card-border: #ffffff;
+      
       --surface: #ffffff;
-      --surface-soft: #f7faff;
-      --line: #e5edf8;
-      --text: #10245f;
-      --text-strong: #071d59;
-      --muted: #65789a;
+      --surface-1: #ffffff;
+      --surface-soft: #f0f8ff;
+      --surface-raised: #ffffff;
+      --surface-inset: #e0f2fe;
+      
+      --line: #b3e5fc;
+      --text: #0f172a;
+      --text-strong: #000000;
+      --muted: #475569;
 
-      --primary-1: #4f6ef7;
-      --primary-2: #3d5eea;
-      --primary-3: #2847c7;
-      --success-1: #2dd4b7;
-      --success-2: #13ae95;
-      --success-3: #087d70;
-      --warn-1: #ffbd3f;
-      --warn-2: #f59e0b;
-      --warn-3: #b86b00;
-      --gray-1: #82a6c9;
-      --gray-2: #688caf;
-      --gray-3: #496987;
-      --pink-1: #fb718f;
-      --pink-2: #ee5277;
-      --pink-3: #bd3159;
-      --violet-1: #9a6bff;
-      --violet-2: #7549e8;
+      /* Primary = Bright Blue */
+      --primary-1: #0ea5e9;
+      --primary-2: #0284c7;
+      --primary-3: #0369a1;
+      
+      /* Success = Vivid Green */
+      --success-1: #22c55e;
+      --success-2: #16a34a;
+      --success-3: #15803d;
+      
+      /* Warn = Vivid Orange/Yellow */
+      --warn-1: #f59e0b;
+      --warn-2: #d97706;
+      --warn-3: #b45309;
+      
+      /* Gray = Solid Gray */
+      --gray-1: #64748b;
+      --gray-2: #475569;
+      --gray-3: #334155;
+      
+      /* Pink = Hot Pink */
+      --pink-1: #ec4899;
+      --pink-2: #db2777;
+      --pink-3: #be185d;
+      
+      /* Violet = Vivid Purple */
+      --violet-1: #8b5cf6;
+      --violet-2: #7c3aed;
+      --violet-3: #6d28d9;
 
-      --ok-bg: #e9fbf6;
-      --ok: #087d70;
-      --err-bg: #fff0f3;
-      --err: #c8365c;
-      --info-bg: #eef3ff;
-      --info: #3152cf;
-      --shadow-card: 0 24px 70px rgba(47, 78, 145, 0.12);
-      --shadow-soft: 0 10px 28px rgba(57, 82, 139, 0.09);
+      --ok-bg: #dcfce7;
+      --ok: #15803d;
+      --err-bg: #fee2e2;
+      --err: #b91c1c;
+      --info-bg: #e0f2fe;
+      --info: #0369a1;
+      
+      /* Reset Claymorphism overrides so they act like normal flat/pop UI */
+      --clay-dark: rgba(0, 0, 0, 0.15);
+      --clay-dark-soft: rgba(0, 0, 0, 0.05);
+      --clay-light: rgba(255, 255, 255, 1);
+      --clay-inset-dark: rgba(0, 0, 0, 0.05);
+      
+      /* Strong, crisp shadows */
+      --shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+      --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
     }
 
     * { box-sizing: border-box; }
@@ -661,65 +690,7 @@
        CLAYMORPHISM THEME
        Presentation-only overrides. Application structure and logic are unchanged.
        ========================================= */
-    :root {
-      color-scheme: light;
-
-      --bg-gradient:
-        radial-gradient(circle at 10% 9%, rgba(255, 205, 218, 0.58) 0, rgba(255, 205, 218, 0) 28%),
-        radial-gradient(circle at 91% 18%, rgba(193, 218, 255, 0.72) 0, rgba(193, 218, 255, 0) 31%),
-        radial-gradient(circle at 72% 92%, rgba(216, 202, 255, 0.58) 0, rgba(216, 202, 255, 0) 30%),
-        linear-gradient(145deg, #f2f3ff 0%, #e9edfb 48%, #f7eff7 100%);
-      --card: rgba(241, 243, 255, 0.94);
-      --card-border: rgba(255, 255, 255, 0.86);
-      --surface: #f4f5ff;
-      --surface-1: #f4f5ff;
-      --surface-soft: #e9edfa;
-      --surface-raised: #f6f6ff;
-      --surface-inset: #e7ebf8;
-      --line: rgba(105, 117, 162, 0.18);
-      --text: #3d4866;
-      --text-strong: #293451;
-      --muted: #5d6885;
-
-      --primary-1: #7884e5;
-      --primary-2: #6673d7;
-      --primary-3: #4f5aac;
-      --success-1: #65c0a4;
-      --success-2: #4aa58a;
-      --success-3: #317561;
-      --warn-1: #f3c17d;
-      --warn-2: #df9f52;
-      --warn-3: #8a5a27;
-      --gray-1: #9aa7c0;
-      --gray-2: #8491ab;
-      --gray-3: #5f6b85;
-      --pink-1: #e495b7;
-      --pink-2: #cf759f;
-      --pink-3: #955171;
-      --violet-1: #a48bdb;
-      --violet-2: #8269c2;
-
-      --ok-bg: #e0f3ec;
-      --ok: #317561;
-      --err-bg: #fae5eb;
-      --err: #a94e69;
-      --info-bg: #e6e9fb;
-      --info: #5361b5;
-
-      --clay-dark: rgba(91, 101, 149, 0.19);
-      --clay-dark-soft: rgba(91, 101, 149, 0.11);
-      --clay-light: rgba(255, 255, 255, 0.92);
-      --clay-inset-dark: rgba(86, 96, 143, 0.1);
-      --shadow-card:
-        18px 20px 42px rgba(91, 101, 149, 0.2),
-        -14px -14px 32px rgba(255, 255, 255, 0.82),
-        inset 3px 3px 3px rgba(255, 255, 255, 0.82),
-        inset -3px -3px 5px rgba(82, 93, 142, 0.06);
-      --shadow-soft:
-        8px 10px 20px rgba(91, 101, 149, 0.14),
-        -6px -6px 15px rgba(255, 255, 255, 0.76),
-        inset 2px 2px 2px rgba(255, 255, 255, 0.66);
-    }
+    
 
     * {
       scrollbar-color: #adb6d1 transparent;
@@ -1521,6 +1492,68 @@
       }
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style id="vibrant-overrides">
+  /* =========================================
+     VIBRANT COMPONENT OVERRIDES (CLEAN/FLAT)
+     ========================================= */
+  
+  /* Menu Buttons */
+  .menu-wrap .btn-neo {
+    background: linear-gradient(135deg, var(--primary-1), var(--primary-2)) !important;
+    color: #ffffff !important;
+    border: none !important;
+    box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
+  }
+  .menu-wrap .btn-neo:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 15px 25px rgba(0,0,0,0.2) !important;
+  }
+  .menu-wrap .btn-neo > i {
+    border: 1px solid rgba(255,255,255,0.4) !important;
+    background: rgba(0,0,0,0.15) !important;
+    color: #ffffff !important;
+    box-shadow: none !important;
+  }
+  
+  /* Individual Menu Button Colors */
+  #menu-finish.btn-neo { background: linear-gradient(135deg, var(--success-1), var(--success-2)) !important; }
+  #menu-ship.btn-neo { background: linear-gradient(135deg, var(--warn-1), var(--warn-2)) !important; }
+  #menu-stock.btn-neo { background: linear-gradient(135deg, var(--gray-1), var(--gray-2)) !important; }
+  #menu-overview.btn-neo { background: linear-gradient(135deg, var(--pink-1), var(--pink-2)) !important; }
+
+  /* Top Stats Cards */
+  .stock-vert {
+    background: #ffffff !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.08) !important;
+  }
+  .stock-vert .k {
+    background: linear-gradient(135deg, var(--primary-1), var(--primary-2)) !important;
+    color: #ffffff !important;
+    border: none !important;
+  }
+  .stock-vert .v {
+    color: #333333 !important;
+  }
+
+  /* Particles (Remove neon glow) */
+  .particle {
+    background: rgba(255,255,255,0.1) !important;
+    box-shadow: none !important;
+  }
+
+  /* V5.1 Tag */
+  .v-tag {
+    background: var(--primary-1) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255,255,255,0.3) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+</style>
+
 </head>
 <body>
   <div class="app-container">
@@ -1531,7 +1564,7 @@
           style="width: 46px; height: auto; border-radius: 10px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));"
           referrerpolicy="no-referrer">
         Scan QR Code 
-        <span style="font-size:0.5em; color:var(--primary-1); background-color:var(--surface-1); padding: 4px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">V5.0</span>
+        <span style="font-size:0.5em; color:var(--primary-1); background-color:var(--surface-1); padding: 4px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">V5.1</span>
       </h1>
       <p class="subtitle" id="subtitle">เลือกเมนูเพื่อเริ่มทำงาน</p>
     </header>
@@ -1791,56 +1824,198 @@
   </div>
 
 <script>
-// =================================================================
-  //  บล็อกพิเศษ: สะพานเชื่อมคำสั่ง (Polyfill) สำหรับย้ายเว็บไปไว้โฮสต์นอก
-  //  ช่วยให้โค้ดระบบเดิมทำงานได้ทันที โดยไม่ต้องแก้ไข Logic การทำงานด้านล่างเลยค่ะ
-  // =================================================================
-  
-  // 1. ให้พี่นำ URL ของ Web App ที่ได้จากการกด Deploy ใน Google Apps Script มาใส่ตรงนี้แทนนะคะ
-  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz7YnuQaxvPB0aRbzVsPud-1pdmDuINbPL2wMdrL-ZR0jg3-f7iaU4977HQCBfvRTZDog/exec";
 
-  // 2. จำลองระบบคำสั่งเดิมของ Google เพื่อให้โค้ดเก่าข้างล่างทำงานได้ปกติ
+  // =================================================================
+  //  Supabase Integration
+  // =================================================================
+  const SUPABASE_URL = 'https://orgbrvopqzpfvmtvxmcd.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZ2Jydm9wcXpwZnZtdHZ4bWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTc5ODEsImV4cCI6MjEwMjY5Mzk4MX0.R-l6wgFtcoYCvXPrmO3xEjychxvEt4p_XUl71pchs00';
+
   window.google = {
     script: {
       run: {
         withSuccessHandler: function(successCallback) {
           return {
             withFailureHandler: function(failureCallback) {
-              return makeRunner(successCallback, failureCallback);
+              return makeSupabaseRunner(successCallback, failureCallback);
             },
-            ...makeRunner(successCallback, () => {})
+            ...makeSupabaseRunner(successCallback, () => {})
           };
         }
       }
     }
   };
 
-  function makeRunner(success, failure) {
+  function makeSupabaseRunner(success, failure) {
     const runner = {};
-    // รายชื่อฟังก์ชันเดิมในไฟล์ .gs ของพี่
-    const functions = ['getItemDetails', 'getStockByItem', 'saveDataRow', 'shipGoods', 'getProductionLogsByItem'];
-    
-    functions.forEach(funcName => {
-      runner[funcName] = function(...args) {
-        // ยิงข้อมูลไปที่ Google Sheets ของพี่ผ่านระบบออนไลน์
-        fetch(WEB_APP_URL, {
-          method: 'POST',
-          body: JSON.stringify({ functionName: funcName, arguments: args }),
-          headers: { 'Content-Type': 'text/plain' }
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.error) {
-            failure(new Error(data.error)); // ถ้าหลังบ้านฟ้อง Error
-          } else {
-            success(data.result); // ถ้าสำเร็จ ส่งข้อมูลให้ระบบเดิมทำงานต่อ
-          }
-        })
-        .catch(err => failure(err));
-      };
-    });
+    const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // -------------------------------------------------------------
+    // Globally intercept callbacks to hide any loading state safely
+    const _success = (res) => {
+       const el = document.getElementById('loading-text');
+       if (el) el.style.display = 'none';
+       success(res);
+    };
+    const _failure = (err) => {
+       const el = document.getElementById('loading-text');
+       if (el) el.style.display = 'none';
+       failure(err);
+    };
+    // -------------------------------------------------------------
+
+    const normU = s => String(s || '').trim().toUpperCase().replace(/[\s\-]+/g, '_');
+    const mapProc = p => {
+      const x = normU(p);
+      return (x === 'FINISHED_GOODS') ? 'FINISH_GOODS' : x;
+    };
+    const prettyProc = key => {
+      const k = normU(key);
+      const map = { RECEIVING: 'Receiving', CUTTING: 'Cutting', MILLING: 'Milling', CNC: 'CNC', GRINDING: 'Grinding', FINISH_GOODS: 'Finished Goods' };
+      return map[k] || key;
+    };
+
+    runner.getItemDetails = async function(itemCode) {
+      try {
+        const code = String(itemCode || '').trim();
+        if (!code) throw new Error('Code is empty');
+        const { data, error } = await sb.from('inventory').select('*').eq('item', code).single();
+        if (error || !data) { _success(null); return; }
+        _success({ item: data.item, namePart: data.name_part, model: data.model, drawing: data.drawing });
+      } catch (err) { _failure(err); }
+    };
+
+    runner.getStockByItem = async function(itemCode) {
+      try {
+        const code = String(itemCode || '').trim();
+        const { data, error } = await sb.from('inventory').select('*').eq('item', code).single();
+        if (error || !data) { _success(null); return; }
+        _success({
+          ITEM: data.item, NAME_PART: data.name_part, MODEL: data.model, DRAWING: data.drawing,
+          RECEIVING: data.receiving || 0, CUTTING: data.cutting || 0, MILLING: data.milling || 0,
+          CNC: data.cnc || 0, GRINDING: data.grinding || 0, FINISH_GOODS: data.finished_goods || 0,
+          NG: data.ng || 0, TOTAL: data.total || 0
+        });
+      } catch (err) { _failure(err); }
+    };
+
+    runner.saveDataRow = async function(record, mode) {
+      try {
+        const m = String(mode || '').toLowerCase();
+        const processKey = mapProc(record.process || '');
+        const goodQty = Number(record.goodQuantity || 0);
+        const ngQty = Number(record.ngQuantity || 0);
+        const totalQty = goodQty + ngQty;
+
+        const { data: inv, error: invError } = await sb.from('inventory').select('*').eq('item', record.item).single();
+        if (invError || !inv) throw new Error(`ไม่พบ Item '${record.item}' ในระบบ`);
+
+        let available = 0;
+        const srcMap = { 'CUTTING': ['receiving'], 'MILLING': ['cutting', 'receiving'], 'CNC': ['milling', 'cutting', 'receiving'], 'GRINDING': ['cnc', 'milling', 'cutting', 'receiving'], 'FINISH_GOODS': ['grinding', 'cnc', 'milling', 'cutting', 'receiving'] };
+        let remain = totalQty;
+        const updates = {};
+        
+        if (processKey !== 'RECEIVING') {
+           const sources = srcMap[processKey] || [];
+           for (const src of sources) { available += Number(inv[src] || 0); }
+           if (totalQty > available) throw new Error(`จำนวนไม่พอ! (มีอยู่ ${available}, ต้องการใช้ ${totalQty})`);
+           if (m === 'finish') {
+              for (const src of sources) {
+                 if (remain > 0) {
+                    const val = Number(inv[src] || 0);
+                    const use = Math.min(val, remain);
+                    updates[src] = val - use;
+                    remain -= use;
+                    inv[src] = updates[src];
+                 }
+              }
+           }
+        }
+
+        const procFieldMap = { 'RECEIVING': 'receiving', 'CUTTING': 'cutting', 'MILLING': 'milling', 'CNC': 'cnc', 'GRINDING': 'grinding', 'FINISH_GOODS': 'finished_goods' };
+        const destField = procFieldMap[processKey];
+        if(!destField) throw new Error(`ไม่พบหัวข้อ Process '${record.process}'`);
+        
+        updates[destField] = (Number(inv[destField] || 0)) + goodQty;
+        updates['ng'] = (Number(inv.ng || 0)) + ngQty;
+        
+        let newTotal = 0;
+        const allFields = ['receiving', 'cutting', 'milling', 'cnc', 'grinding', 'finished_goods'];
+        for (const f of allFields) { newTotal += Number(updates[f] !== undefined ? updates[f] : inv[f]); }
+        updates['total'] = newTotal;
+
+        if (processKey === 'RECEIVING' || m === 'finish') {
+            const { error: updateError } = await sb.from('inventory').update(updates).eq('id', inv.id);
+            if (updateError) throw updateError;
+        }
+
+        const menuText = (m === 'start') ? 'เริ่มการทำงาน' : (m === 'finish') ? 'เสร็จการทำงาน' : String(mode||'');
+        const procForLog = prettyProc(processKey);
+        
+        const logData = {
+           item: record.item, name_part: record.namePart || inv.name_part, model: record.model || inv.model,
+           drawing: record.drawing || inv.drawing, process: procForLog, good_qty: goodQty, ng_qty: ngQty,
+           total_qty: totalQty, employee_name: record.name, menu: menuText
+        };
+        const { error: logError } = await sb.from('production_logs').insert(logData);
+        if (logError) throw logError;
+
+        _success(`บันทึกข้อมูล (${m}) สำเร็จ!`);
+      } catch (err) { _failure(err); }
+    };
+
+    runner.shipGoods = async function(itemCode, qty, senderName) {
+      try {
+        const sendQty = Number(qty || 0);
+        const { data: inv, error: invError } = await sb.from('inventory').select('*').eq('item', itemCode).single();
+        if (invError || !inv) throw new Error(`ไม่พบ ITEM '${itemCode}'`);
+
+        const before = Number(inv.finished_goods || 0);
+        if (sendQty > before) throw new Error(`จำนวนส่ง (${sendQty}) มากกว่าจำนวนที่มี (${before})`);
+
+        const after = before - sendQty;
+        const newTotal = (Number(inv.total || 0)) - sendQty;
+
+        const { error: updateError } = await sb.from('inventory').update({ finished_goods: after, total: newTotal }).eq('id', inv.id);
+        if (updateError) throw updateError;
+
+        const logData = {
+           item: inv.item, name_part: inv.name_part, model: inv.model, drawing: inv.drawing,
+           process: 'Ship', good_qty: sendQty, ng_qty: 0, total_qty: sendQty, employee_name: senderName, menu: 'ส่งสินค้า'
+        };
+        const { error: logError } = await sb.from('production_logs').insert(logData);
+        if (logError) throw logError;
+
+        _success({
+          ok: true, message: `ส่งสินค้าเรียบร้อย หักจาก Finished Goods ${sendQty} ชิ้น (คงเหลือ ${after})`,
+          ITEM: inv.item, NAME_PART: inv.name_part, MODEL: inv.model, DRAWING: inv.drawing,
+          FINISH_GOODS_BEFORE: before, FINISH_GOODS_AFTER: after, SENT_QTY: sendQty, SENDER: senderName
+        });
+      } catch (err) { _failure(err); }
+    };
+
+    runner.getProductionLogsByItem = async function(itemCode) {
+      try {
+         const code = String(itemCode || '').trim();
+         const { data: logs, error } = await sb.from('production_logs').select('*').eq('item', code).order('timestamp', { ascending: false });
+         if (error) throw error;
+         if (!logs || logs.length === 0) { _success({ itemInfo: null, logs: [] }); return; }
+
+         const top = logs[0];
+         const itemInfo = { Item: top.item, NamePart: top.name_part, Drawing: top.drawing, Model: top.model };
+         const formattedLogs = logs.map(r => ({
+            Item: r.item, NamePart: r.name_part, Drawing: r.drawing, Process: r.process,
+            Good: r.good_qty, NG: r.ng_qty, Total: r.total_qty, Name: r.employee_name,
+            Menu: r.menu, Timestamp: r.timestamp
+         }));
+
+         _success({ itemInfo, logs: formattedLogs });
+      } catch (err) { _failure(err); }
+    };
+
     return runner;
   }
+
   // =================================================================
   //  จบส่วนสะพานเชื่อม (โค้ดเดิมด้านล่างของพี่จะเริ่มต่อตรงนี้ได้เลยค๊า)
   // =================================================================
@@ -2203,7 +2378,7 @@
         return;
       }
       ui.shipError.style.display='none';
-      showToast('กำลังดึงข้อมูล...','info',1200);
+      showLoading(true, 'กำลังดึงข้อมูล...');
 
       google.script.run
         .withSuccessHandler(res=>{
@@ -2354,7 +2529,7 @@
         return;
       }
       ui.stockError.style.display='none';
-      showToast('กำลังค้นหา...','info',1200);
+      showLoading(true, 'กำลังค้นหา...');
 
       google.script.run
         .withSuccessHandler(res=>{
@@ -2448,7 +2623,7 @@
         return;
       }
       ui.reportError.style.display='none';
-      showToast('กำลังดึงรายงาน...','info',1200);
+      showLoading(true, 'กำลังดึงรายงาน...');
 
       google.script.run
         .withSuccessHandler(res=>{
