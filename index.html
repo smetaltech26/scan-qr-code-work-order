@@ -1591,7 +1591,7 @@
       }
     }
 
-    /* Modal Overlay & Panel (Full Viewport Level) */
+    /* Modal Overlay & Panel (Full Viewport Level - Hidden by default) */
     .smt-modal-overlay {
       position: fixed !important;
       inset: 0 !important;
@@ -1605,9 +1605,8 @@
       background: rgba(15, 23, 42, 0.65) !important;
       backdrop-filter: blur(8px) !important;
       -webkit-backdrop-filter: blur(8px) !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
+      align-items: center;
+      justify-content: center;
       z-index: 999999 !important;
       padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)) !important;
       box-sizing: border-box !important;
