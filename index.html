@@ -1506,16 +1506,6 @@
     /* =========================================
        SETTINGS & MODAL STYLES (Claymorphism & Mobile Safe)
        ========================================= */
-    .subtitle-wrapper {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      gap: 8px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
     .btn-setting-gear {
       display: inline-flex !important;
       position: static !important;
@@ -1544,42 +1534,61 @@
     }
 
     .settings-tabs {
-      display: flex;
-      gap: 8px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
       border-bottom: 2px solid var(--line);
       padding-bottom: 10px;
-      margin-bottom: 20px;
-      overflow-x: auto;
-      scrollbar-width: none;
+      margin-bottom: 18px;
+      width: 100%;
     }
-    .settings-tabs::-webkit-scrollbar { display: none; }
     
     .settings-tab-btn {
-      flex: 1;
-      min-width: 80px;
-      padding: 10px 6px;
-      border-radius: 18px;
-      border: 1.5px solid rgba(255, 255, 255, 0.7);
+      min-width: 0;
+      width: 100%;
+      padding: 8px 4px;
+      border-radius: 16px;
+      border: 1.5px solid rgba(255, 255, 255, 0.75);
       background: linear-gradient(145deg, #f5f6ff, #e5e8f7);
       color: var(--muted);
       font-weight: 600;
-      font-size: 0.86rem;
+      font-size: 0.82rem;
+      line-height: 1.2;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      justify-content: center;
+      gap: 3px;
       cursor: pointer;
-      box-shadow: 4px 6px 12px rgba(91, 101, 149, 0.1), -3px -3px 8px rgba(255, 255, 255, 0.7);
+      box-shadow: 3px 5px 10px rgba(91, 101, 149, 0.1), -2px -2px 6px rgba(255, 255, 255, 0.7);
       transition: all 0.2s ease;
       text-align: center;
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-word;
     }
-    .settings-tab-btn i { font-size: 1.25rem; }
+    .settings-tab-btn i { font-size: 1.15rem; }
     .settings-tab-btn.active {
       background: linear-gradient(145deg, #626ec5, #515cb1);
       color: #ffffff;
-      border-color: rgba(255, 255, 255, 0.8);
-      box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.3), 5px 7px 15px rgba(82, 94, 177, 0.3);
+      border-color: rgba(255, 255, 255, 0.85);
+      box-shadow: inset 2px 2px 4px rgba(255, 255, 255, 0.3), 4px 6px 12px rgba(82, 94, 177, 0.3);
+    }
+
+    @media (max-width: 520px) {
+      .settings-tabs {
+        gap: 4px;
+        padding-bottom: 8px;
+        margin-bottom: 14px;
+      }
+      .settings-tab-btn {
+        padding: 7px 2px;
+        border-radius: 13px;
+        font-size: 0.72rem;
+        gap: 2px;
+      }
+      .settings-tab-btn i {
+        font-size: 1.05rem;
+      }
     }
 
     .smt-modal-overlay {
@@ -2041,18 +2050,18 @@
       <div id="settings-section" class="mt-2" style="display:none;">
         <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
           <div class="d-flex align-items-center">
-            <span style="font-size:26px; margin-right:10px; color:var(--primary-2);"><i class="bi bi-gear-fill"></i></span>
+            <span style="font-size:24px; margin-right:8px; color:var(--primary-2);"><i class="bi bi-gear-fill"></i></span>
             <div>
-              <h4 class="font-weight-bold mb-0" style="color:var(--primary-3); font-size:1.35rem;">ตั้งค่าระบบ</h4>
+              <h4 class="font-weight-bold mb-0" style="color:var(--primary-3); font-size:1.25rem;">ตั้งค่าระบบ</h4>
               <small class="text-muted">Admin Control Panel</small>
             </div>
           </div>
-          <button id="settings-back-btn" class="btn-neo btn-neo-sm neo-primary" style="width:auto; padding:7px 18px; border-radius:16px; font-size:0.92rem;">
+          <button id="settings-back-btn" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:36px; padding:5px 14px; border-radius:14px; font-size:0.84rem;">
             <i class="bi bi-arrow-left"></i> กลับหน้าแรก
           </button>
         </div>
 
-        <!-- แท็บเมนูย่อย 4 แท็บ -->
+        <!-- แท็บเมนูย่อย 4 แท็บ จัด 4 คอลัมน์พอดีเป๊ะ -->
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn active" data-tab="tab-part-stock">
             <i class="bi bi-box-seam-fill"></i>
@@ -2060,28 +2069,30 @@
           </button>
           <button type="button" class="settings-tab-btn" data-tab="tab-prod-logs">
             <i class="bi bi-journal-text"></i>
-            <span>Production Logs</span>
+            <span>Logs ผลิต</span>
           </button>
           <button type="button" class="settings-tab-btn" data-tab="tab-daily-summary">
             <i class="bi bi-cash-stack"></i>
-            <span>ยอดขาย Summary</span>
+            <span>ยอดขาย</span>
           </button>
           <button type="button" class="settings-tab-btn" data-tab="tab-change-pwd">
             <i class="bi bi-shield-lock-fill"></i>
-            <span>เปลี่ยนรหัสผ่าน</span>
+            <span>รหัสผ่าน</span>
           </button>
         </div>
 
         <!-- ================= แท็บ 1: จัดการ Part, สต็อก และราคา ================= -->
         <div id="tab-part-stock" class="settings-tab-pane">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <h6 class="font-weight-bold mb-0" style="color:var(--text-strong);"><i class="bi bi-search"></i> ค้นหาและแก้ไข Part</h6>
-            <div class="d-flex">
-              <button id="btn-clear-part-search" class="btn-neo btn-neo-sm btn-neo-cancel mr-2" style="width:auto; padding:7px 14px; font-size:0.88rem;">
-                <i class="bi bi-eraser-fill"></i> ล้างข้อมูล
+          <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap" style="gap: 6px;">
+            <h6 class="font-weight-bold mb-0" style="color:var(--text-strong); font-size:0.95rem;">
+              <i class="bi bi-search"></i> ค้นหา/แก้ไข Part
+            </h6>
+            <div class="d-flex" style="gap: 6px;">
+              <button id="btn-clear-part-search" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; min-height:34px; padding:4px 10px; font-size:0.8rem; border-radius:12px;">
+                <i class="bi bi-eraser-fill"></i> ล้าง
               </button>
-              <button id="btn-show-add-part" class="btn-neo btn-neo-sm neo-success" style="width:auto; padding:7px 14px; font-size:0.88rem;">
-                <i class="bi bi-plus-circle-fill"></i> เพิ่ม Part ใหม่
+              <button id="btn-show-add-part" class="btn-neo btn-neo-sm neo-success" style="width:auto; min-height:34px; padding:4px 12px; font-size:0.8rem; border-radius:12px;">
+                <i class="bi bi-plus-circle-fill"></i> เพิ่ม Part
               </button>
             </div>
           </div>
@@ -2181,12 +2192,12 @@
         <!-- ================= แท็บ 2: จัดการ Production Logs ================= -->
         <div id="tab-prod-logs" class="settings-tab-pane" style="display:none;">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h6 class="font-weight-bold mb-0" style="color:var(--text-strong);"><i class="bi bi-clock-history"></i> ประวัติการผลิต (Production Logs)</h6>
-            <div class="d-flex">
-              <button id="btn-clear-log-filters" class="btn-neo btn-neo-sm btn-neo-cancel mr-2" style="width:auto; padding:6px 14px; font-size:0.86rem;">
-                <i class="bi bi-eraser-fill"></i> ล้างข้อมูล
+            <h6 class="font-weight-bold mb-0" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-clock-history"></i> ประวัติการผลิต (Production Logs)</h6>
+            <div class="d-flex" style="gap:6px;">
+              <button id="btn-clear-log-filters" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; min-height:34px; padding:4px 10px; font-size:0.8rem; border-radius:12px;">
+                <i class="bi bi-eraser-fill"></i> ล้าง
               </button>
-              <button id="btn-refresh-logs" class="btn-neo btn-neo-sm neo-primary" style="width:auto; padding:6px 16px; font-size:0.86rem; color:#ffffff !important;">
+              <button id="btn-refresh-logs" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:34px; padding:4px 12px; font-size:0.8rem; border-radius:12px;">
                 <i class="bi bi-arrow-clockwise"></i> รีเฟรช
               </button>
             </div>
@@ -2219,7 +2230,7 @@
 
         <!-- ================= แท็บ 3: จัดการยอดขายและยอดสะสม ================= -->
         <div id="tab-daily-summary" class="settings-tab-pane" style="display:none;">
-          <h6 class="font-weight-bold mb-3" style="color:var(--text-strong);"><i class="bi bi-currency-dollar"></i> จัดการยอดขายประจำวันและสะสม (daily_summary)</h6>
+          <h6 class="font-weight-bold mb-3" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-currency-dollar"></i> จัดการยอดขายประจำวันและสะสม (daily_summary)</h6>
           
           <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
             <div class="form-group mb-3">
@@ -2255,7 +2266,7 @@
 
         <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting ================= -->
         <div id="tab-change-pwd" class="settings-tab-pane" style="display:none;">
-          <h6 class="font-weight-bold mb-3" style="color:var(--text-strong);"><i class="bi bi-key-fill"></i> เปลี่ยนรหัสผ่านเข้าหน้า Setting</h6>
+          <h6 class="font-weight-bold mb-3" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-shield-lock-fill"></i> เปลี่ยนรหัสผ่านเข้าหน้า Setting</h6>
           <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">รหัสผ่านปัจจุบัน</label>
