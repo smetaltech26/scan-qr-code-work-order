@@ -203,29 +203,32 @@
       color: #0f172a !important;
     }
 
-    /* Home menu cards */
+    /* Home menu cards (Squircle Vertical Card Style as in Sample Image) */
     .menu-wrap {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 18px;
+      gap: 16px;
     }
 
     .menu-wrap .btn-neo {
-      min-height: 116px;
-      padding: 18px 22px;
-      justify-content: flex-start;
-      gap: 18px;
+      min-height: 148px;
+      padding: 20px 14px;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 12px;
       overflow: hidden;
       background: linear-gradient(135deg, var(--primary-1), var(--primary-2)) !important;
       color: #ffffff !important;
-      border-radius: 24px;
-      box-shadow: 0 10px 20px rgba(0,0,0,0.15) !important;
-      font-size: 1.18rem;
-      text-align: left;
+      border-radius: 28px;
+      box-shadow: 0 10px 22px rgba(0,0,0,0.12) !important;
+      font-size: 1.08rem;
+      font-weight: 700;
+      text-align: center;
     }
     .menu-wrap .btn-neo:hover {
       transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 15px 25px rgba(0,0,0,0.2) !important;
+      box-shadow: 0 16px 28px rgba(0,0,0,0.18) !important;
     }
     .menu-wrap .btn-neo > i {
       flex: 0 0 62px;
@@ -234,11 +237,12 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border-radius: 50%;
-      background: rgba(0,0,0,0.15) !important;
-      border: 1px solid rgba(255,255,255,0.4) !important;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.2) !important;
+      border: 1.5px solid rgba(255,255,255,0.45) !important;
       color: #fff;
-      font-size: 1.75rem;
+      font-size: 1.85rem;
+      margin: 0 auto;
     }
 
     #menu-finish.btn-neo { background: linear-gradient(135deg, var(--success-1), var(--success-2)) !important; }
@@ -567,32 +571,39 @@
     /* Responsive */
     @media (max-width: 520px) {
       body { padding: max(0.8rem, env(safe-area-inset-top)) max(0.8rem, env(safe-area-inset-right)) max(1.25rem, env(safe-area-inset-bottom)) max(0.8rem, env(safe-area-inset-left)); }
-      .main-card { padding: 16px; border-radius: 24px; }
+      .main-card { padding: 20px 14px; border-radius: 32px; }
       
-      .header { padding: 0 34px; margin-bottom: 1.15rem; }
-      .header h1 { font-size: 1.35rem; gap: 6px; }
-      .header h1 img { width: 36px; }
-      .btn-setting-gear { width: 30px; height: 30px; font-size: 0.95rem; top: 2px; right: 0; }
+      .header { padding: 0 36px; margin-bottom: 1.2rem; }
+      .header h1 { font-size: 1.42rem; gap: 8px; }
+      .header h1 img { width: 38px; }
+      .btn-setting-gear { width: 32px; height: 32px; font-size: 1rem; top: 3px; right: 0; }
 
-      /* เรียงเมนู 2 คอลัมน์ (แถวละ 2 เมนู) บนมือถือ */
+      /* เรียงเมนู 2 คอลัมน์ การ์ดแนวตั้ง Squircle เต็มจอเหมือนรูปตัวอย่างที่ 1 */
       .menu-wrap {
         grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-        gap: 10px !important;
+        gap: 12px !important;
       }
       .menu-wrap .btn-neo {
-        min-height: 80px !important;
-        padding: 10px 10px !important;
-        font-size: 0.9rem !important;
+        min-height: 140px !important;
+        padding: 16px 8px !important;
+        font-size: 0.98rem !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
         gap: 10px !important;
-        border-radius: 18px !important;
-        justify-content: flex-start !important;
-        text-align: left !important;
+        border-radius: 26px !important;
+        box-shadow: 0 8px 18px rgba(0,0,0,0.1) !important;
       }
       .menu-wrap .btn-neo > i {
-        flex: 0 0 40px !important;
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 1.2rem !important;
+        flex: 0 0 54px !important;
+        width: 54px !important;
+        height: 54px !important;
+        font-size: 1.6rem !important;
+        border-radius: 18px !important;
+        background: rgba(255, 255, 255, 0.22) !important;
+        border: 1.5px solid rgba(255, 255, 255, 0.45) !important;
+        margin: 0 auto !important;
       }
 
       .btn-row { flex-direction: column; gap: 10px; }
