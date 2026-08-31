@@ -190,6 +190,18 @@
     .btn-neo-outline.neo-gray { color: var(--gray-2); border-color: var(--gray-1); }
     .btn-neo-outline.neo-warn { color: var(--warn-3); border-color: var(--warn-1); }
 
+    .btn-neo-cancel {
+      background: #f1f5f9 !important;
+      color: #334155 !important;
+      border: 1.5px solid #cbd5e1 !important;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+      font-weight: 600;
+    }
+    .btn-neo-cancel:hover {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+    }
+
     /* Home menu cards */
     .menu-wrap {
       display: grid;
@@ -881,9 +893,14 @@
         <div id="tab-part-stock" class="settings-tab-pane">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="font-weight-bold mb-0" style="color:var(--text-strong);"><i class="bi bi-search"></i> ค้นหาและแก้ไข Part</h6>
-            <button id="btn-show-add-part" class="btn-neo btn-neo-sm neo-success" style="width:auto; padding:7px 14px; font-size:0.88rem;">
-              <i class="bi bi-plus-circle-fill"></i> เพิ่ม Part ใหม่
-            </button>
+            <div class="d-flex">
+              <button id="btn-clear-part-search" class="btn-neo btn-neo-sm btn-neo-cancel mr-2" style="width:auto; padding:7px 14px; font-size:0.88rem;">
+                <i class="bi bi-eraser-fill"></i> ล้างข้อมูล
+              </button>
+              <button id="btn-show-add-part" class="btn-neo btn-neo-sm neo-success" style="width:auto; padding:7px 14px; font-size:0.88rem;">
+                <i class="bi bi-plus-circle-fill"></i> เพิ่ม Part ใหม่
+              </button>
+            </div>
           </div>
 
           <div class="form-group mb-2 position-relative">
@@ -982,9 +999,14 @@
         <div id="tab-prod-logs" class="settings-tab-pane" style="display:none;">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <h6 class="font-weight-bold mb-0" style="color:var(--text-strong);"><i class="bi bi-clock-history"></i> ประวัติการผลิต (Production Logs)</h6>
-            <button id="btn-refresh-logs" class="btn-neo btn-neo-sm btn-neo-outline neo-primary" style="width:auto; padding:6px 12px; font-size:0.86rem;">
-              <i class="bi bi-arrow-clockwise"></i> รีเฟรช
-            </button>
+            <div class="d-flex">
+              <button id="btn-clear-log-filters" class="btn-neo btn-neo-sm btn-neo-cancel mr-2" style="width:auto; padding:6px 14px; font-size:0.86rem;">
+                <i class="bi bi-eraser-fill"></i> ล้างข้อมูล
+              </button>
+              <button id="btn-refresh-logs" class="btn-neo btn-neo-sm neo-primary" style="width:auto; padding:6px 16px; font-size:0.86rem; color:#ffffff !important;">
+                <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+              </button>
+            </div>
           </div>
 
           <div class="form-row mb-3">
@@ -1094,7 +1116,7 @@
             <div id="pwd-error-msg" class="text-danger small font-weight-bold" style="display:none;">รหัสผ่านไม่ถูกต้อง!</div>
           </div>
           <div class="smt-modal-footer justify-content-between">
-            <button id="btn-cancel-pwd" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">ยกเลิก</button>
+            <button id="btn-cancel-pwd" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; padding:8px 18px;">ยกเลิก</button>
             <button id="btn-submit-pwd" class="btn-neo btn-neo-sm neo-primary" style="width:auto; padding:8px 22px;">เข้าสู่ระบบ</button>
           </div>
         </div>
@@ -1175,7 +1197,7 @@
             </div>
           </div>
           <div class="smt-modal-footer justify-content-between">
-            <button id="btn-cancel-add-part" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">ยกเลิก</button>
+            <button id="btn-cancel-add-part" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; padding:8px 18px;">ยกเลิก</button>
             <button id="btn-submit-add-part" class="btn-neo btn-neo-sm neo-success" style="width:auto; padding:8px 24px;">
               <i class="bi bi-plus-circle-fill"></i> เพิ่ม Part
             </button>
@@ -1196,7 +1218,7 @@
             <small class="text-muted">การดำเนินการนี้ไม่สามารถย้อนกลับได้</small>
           </div>
           <div class="smt-modal-footer justify-content-between">
-            <button id="btn-confirm-cancel" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto;">ยกเลิก</button>
+            <button id="btn-confirm-cancel" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; padding:8px 18px;">ยกเลิก</button>
             <button id="btn-confirm-ok" class="btn-neo btn-neo-sm" style="width:auto; padding:8px 22px; background:var(--err); color:#fff;">ยืนยันลบ</button>
           </div>
         </div>
@@ -1670,6 +1692,7 @@
       // Part Edit
       settingPartSearch: $('#setting-part-search'),
       settingPartSearchBtn: $('#setting-part-search-btn'),
+      btnClearPartSearch: $('#btn-clear-part-search'),
       partSearchDropdown: $('#part-search-dropdown'),
       partEditContainer: $('#part-edit-container'),
       editPartItemBadge: $('#edit-part-item-badge'),
@@ -1713,6 +1736,7 @@
 
       // Logs Tab
       btnRefreshLogs: $('#btn-refresh-logs'),
+      btnClearLogFilters: $('#btn-clear-log-filters'),
       filterLogKeyword: $('#filter-log-keyword'),
       filterLogDate: $('#filter-log-date'),
       chkLogSelectAll: $('#chk-log-select-all'),
@@ -2331,6 +2355,15 @@
       searchParts(ui.settingPartSearch.value);
     });
 
+    ui.btnClearPartSearch.addEventListener('click', () => {
+      ui.settingPartSearch.value = '';
+      ui.partSearchDropdown.style.display = 'none';
+      ui.partEditContainer.style.display = 'none';
+      state.currentLoadedPart = null;
+      ui.settingPartSearch.focus();
+      showToast('ล้างข้อมูลการค้นหา Part เรียบร้อย', 'info', 1500);
+    });
+
     function searchParts(q) {
       showLoading(true, 'กำลังค้นหา Part...');
       google.script.run
@@ -2703,6 +2736,15 @@
     }
 
     ui.btnRefreshLogs.addEventListener('click', loadProductionLogs);
+    ui.btnClearLogFilters.addEventListener('click', () => {
+      ui.filterLogKeyword.value = '';
+      ui.filterLogDate.value = '';
+      ui.chkLogSelectAll.checked = false;
+      state.selectedLogIds.clear();
+      updateSelectedLogsUI();
+      loadProductionLogs();
+      showToast('ล้างตัวกรองประวัติการผลิตเรียบร้อย', 'info', 1500);
+    });
     ui.filterLogKeyword.addEventListener('input', () => {
       clearTimeout(partSearchTimer);
       partSearchTimer = setTimeout(loadProductionLogs, 400);
