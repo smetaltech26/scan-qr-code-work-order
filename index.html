@@ -582,7 +582,7 @@
           style="width: 46px; height: auto; border-radius: 10px; filter: drop-shadow(0 2px 8px rgba(0,0,0,0.1));"
           referrerpolicy="no-referrer">
         Scan QR Code 
-        <span style="font-size:0.5em; color:var(--primary-1); background-color:var(--surface-1); padding: 4px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">V5.1</span>
+        <span style="font-size:0.5em; color:var(--primary-1); background-color:var(--surface-1); padding: 4px 10px; border-radius: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">V5.2</span>
       </h1>
       <p class="subtitle" id="subtitle">เลือกเมนูเพื่อเริ่มทำงาน</p>
     </header>
@@ -852,12 +852,12 @@
               <small class="text-muted">Admin Control Panel</small>
             </div>
           </div>
-          <button id="settings-back-btn" class="btn-neo btn-neo-sm btn-neo-outline neo-gray" style="width:auto; padding:6px 14px;">
-            <i class="bi bi-arrow-left"></i> กลับ
+          <button id="settings-back-btn" class="btn-neo btn-neo-sm neo-primary" style="width:auto; padding:7px 18px; border-radius:14px; box-shadow:0 4px 12px rgba(14,165,233,0.3); font-size:0.92rem;">
+            <i class="bi bi-arrow-left"></i> กลับหน้าแรก
           </button>
         </div>
 
-        <!-- แท็บเมนูย่อย 3 แท็บ -->
+        <!-- แท็บเมนูย่อย 4 แท็บ -->
         <div class="settings-tabs">
           <button type="button" class="settings-tab-btn active" data-tab="tab-part-stock">
             <i class="bi bi-box-seam-fill"></i>
@@ -870,6 +870,10 @@
           <button type="button" class="settings-tab-btn" data-tab="tab-daily-summary">
             <i class="bi bi-cash-stack"></i>
             <span>ยอดขาย Summary</span>
+          </button>
+          <button type="button" class="settings-tab-btn" data-tab="tab-change-pwd">
+            <i class="bi bi-shield-lock-fill"></i>
+            <span>เปลี่ยนรหัสผ่าน</span>
           </button>
         </div>
 
@@ -1042,6 +1046,29 @@
 
           <h6 class="font-weight-bold mb-2 small text-muted"><i class="bi bi-clock-history"></i> ประวัติยอดขายล่าสุด</h6>
           <div id="recent-summary-list" style="max-height:220px; overflow-y:auto;"></div>
+        </div>
+
+        <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting ================= -->
+        <div id="tab-change-pwd" class="settings-tab-pane" style="display:none;">
+          <h6 class="font-weight-bold mb-3" style="color:var(--text-strong);"><i class="bi bi-key-fill"></i> เปลี่ยนรหัสผ่านเข้าหน้า Setting</h6>
+          <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-muted mb-1">รหัสผ่านปัจจุบัน</label>
+              <input id="pwd-curr-input" type="password" class="form-control" placeholder="กรอกรหัสผ่านปัจจุบัน (เริ่มต้น: 1234)" autocomplete="off">
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-muted mb-1">รหัสผ่านใหม่</label>
+              <input id="pwd-new-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่" autocomplete="off">
+            </div>
+            <div class="form-group mb-3">
+              <label class="small font-weight-bold text-muted mb-1">ยืนยันรหัสผ่านใหม่</label>
+              <input id="pwd-confirm-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" autocomplete="off">
+            </div>
+            <div id="change-pwd-msg" class="small font-weight-bold mb-3" style="display:none;"></div>
+            <button id="btn-save-new-pwd" class="btn-neo btn-neo-lg neo-primary w-100">
+              <i class="bi bi-shield-check"></i> บันทึกรหัสผ่านใหม่
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1700,6 +1727,13 @@
       summaryAccumIncome: $('#summary-accum-income'),
       btnSaveSummary: $('#btn-save-summary'),
       recentSummaryList: $('#recent-summary-list'),
+
+      // Change Password Tab
+      pwdCurrInput: $('#pwd-curr-input'),
+      pwdNewInput: $('#pwd-new-input'),
+      pwdConfirmInput: $('#pwd-confirm-input'),
+      changePwdMsg: $('#change-pwd-msg'),
+      btnSaveNewPwd: $('#btn-save-new-pwd'),
 
       // Confirm Modal
       modalConfirm: $('#modal-confirm'),
@@ -2770,6 +2804,44 @@
           showToast('บันทึกยอดขายล้มเหลว: ' + err.message, 'error', 5000);
         })
         .saveDailySummary(payload);
+    });
+
+    // -------------------------------------------------------------
+    // Tab 4: Change Password
+    // -------------------------------------------------------------
+    ui.btnSaveNewPwd.addEventListener('click', () => {
+      const curr = (ui.pwdCurrInput.value || '').trim();
+      const newP = (ui.pwdNewInput.value || '').trim();
+      const confP = (ui.pwdConfirmInput.value || '').trim();
+      const currentSaved = getStoredPassword();
+
+      if (curr !== currentSaved && curr !== 'smt2026') {
+        ui.changePwdMsg.className = 'text-danger small font-weight-bold mb-3';
+        ui.changePwdMsg.textContent = '❌ รหัสผ่านปัจจุบันไม่ถูกต้อง';
+        ui.changePwdMsg.style.display = 'block';
+        return;
+      }
+      if (!newP) {
+        ui.changePwdMsg.className = 'text-danger small font-weight-bold mb-3';
+        ui.changePwdMsg.textContent = '❌ กรุณากรอกรหัสผ่านใหม่';
+        ui.changePwdMsg.style.display = 'block';
+        return;
+      }
+      if (newP !== confP) {
+        ui.changePwdMsg.className = 'text-danger small font-weight-bold mb-3';
+        ui.changePwdMsg.textContent = '❌ รหัสผ่านใหม่และการยืนยันไม่ตรงกัน';
+        ui.changePwdMsg.style.display = 'block';
+        return;
+      }
+
+      localStorage.setItem(ADMIN_PASSWORD_KEY, newP);
+      ui.pwdCurrInput.value = '';
+      ui.pwdNewInput.value = '';
+      ui.pwdConfirmInput.value = '';
+      ui.changePwdMsg.className = 'text-success small font-weight-bold mb-3';
+      ui.changePwdMsg.textContent = '✅ เปลี่ยนรหัสผ่าน Setting สำเร็จแล้ว!';
+      ui.changePwdMsg.style.display = 'block';
+      showToast('เปลี่ยนรหัสผ่าน Setting สำเร็จแล้ว', 'success');
     });
 
     // ===== Workflow Scan & Reset =====
