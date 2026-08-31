@@ -3523,7 +3523,22 @@
     // Settings Logic (เมนูที่ 7)
     // =================================================================
     const ADMIN_PASSWORD_KEY = 'smt_admin_pwd';
-    const getStoredPassword = () => localStorage.getItem(ADMIN_PASSWORD_KEY) || '1234';
+    let inMemoryAdminPassword = (function() {
+      try { return localStorage.getItem(ADMIN_PASSWORD_KEY) || '1234'; } catch(e) { return '1234'; }
+    })();
+    const getStoredPassword = () => {
+      try {
+        const stored = localStorage.getItem(ADMIN_PASSWORD_KEY);
+        if (stored) return stored.trim();
+      } catch (e) {}
+      return inMemoryAdminPassword || '1234';
+    };
+    const setStoredPassword = (newPwd) => {
+      inMemoryAdminPassword = newPwd.trim();
+      try {
+        localStorage.setItem(ADMIN_PASSWORD_KEY, newPwd.trim());
+      } catch (e) {}
+    };
 
     ui.btnOpenSettings.addEventListener('click', async () => {
       await stopScanner();
@@ -3540,7 +3555,7 @@
     function verifyPasswordAndOpenSettings() {
       const entered = (ui.adminPasswordInput.value || '').trim();
       const currentPwd = getStoredPassword();
-      if (entered === currentPwd || entered === '1234' || entered === 'smt2026') {
+      if (entered && (entered === currentPwd || entered === 'smt2026')) {
         closePwdModal();
         enterSettingsPage();
       } else {
@@ -4138,7 +4153,7 @@
         return;
       }
 
-      localStorage.setItem(ADMIN_PASSWORD_KEY, newP);
+      setStoredPassword(newP);
       ui.pwdCurrInput.value = '';
       ui.pwdNewInput.value = '';
       ui.pwdConfirmInput.value = '';
