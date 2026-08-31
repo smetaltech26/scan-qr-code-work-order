@@ -1591,32 +1591,44 @@
       }
     }
 
+    /* Modal Overlay & Panel (Full Viewport Level) */
     .smt-modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(20, 26, 48, 0.65);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+      position: fixed !important;
+      inset: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      height: 100svh !important;
+      background: rgba(15, 23, 42, 0.65) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      z-index: 999999 !important;
+      padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)) !important;
+      box-sizing: border-box !important;
       animation: toastIn 0.2s ease-out;
     }
     
     .smt-modal-panel {
-      width: 100%;
-      max-width: 520px;
-      max-height: calc(100svh - 2rem);
-      background: linear-gradient(145deg, #ffffff, #f7f9fd);
-      border-radius: 32px;
-      box-shadow: 18px 22px 45px rgba(35, 45, 85, 0.3), -10px -10px 25px rgba(255, 255, 255, 0.85);
-      border: 2px solid rgba(255, 255, 255, 0.9);
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      overflow: hidden;
+      width: 100% !important;
+      max-width: 520px !important;
+      max-height: calc(100svh - 2rem) !important;
+      background: linear-gradient(145deg, #ffffff, #f7f9fd) !important;
+      border-radius: 28px !important;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.9) !important;
+      border: 2px solid rgba(255, 255, 255, 0.9) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+      position: relative !important;
+      z-index: 1000000 !important;
+      margin: auto !important;
     }
     
     .smt-modal-header {
@@ -2288,8 +2300,12 @@
         </div>
       </div>
 
+      <div id="status-toast"></div>
+      <div id="loading-text"><i class="bi bi-hourglass-split"></i> กำลังโหลดข้อมูล...</div>
+    </main>
+
       <!-- =========================================
-           MODALS (ตามมาตรฐาน Rule 12)
+           MODALS (วางนอก main-card คลุมเต็มหน้าจอ 100vw/100vh ตาม Rule 12)
            ========================================= -->
 
       <!-- 1. Password Modal -->
@@ -2316,7 +2332,7 @@
         </div>
       </div>
 
-      <!-- 2. Add New Part Modal (พร้อมระบบตรวจสอบซ้ำซ้อนตามที่พี่ต้นสั่ง) -->
+      <!-- 2. Add New Part Modal (คลุมเต็มหน้าจอ Scroll ได้สมบูรณ์แบบ) -->
       <div id="modal-add-part" class="smt-modal-overlay" style="display:none;">
         <div class="smt-modal-panel">
           <div class="smt-modal-header">
@@ -2418,9 +2434,6 @@
         </div>
       </div>
 
-      <div id="status-toast"></div>
-      <div id="loading-text"><i class="bi bi-hourglass-split"></i> กำลังโหลดข้อมูล...</div>
-    </main>
   </div>
 
 <script>
