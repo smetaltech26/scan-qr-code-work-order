@@ -1591,6 +1591,37 @@
       }
     }
 
+    /* Password Input Wrapper & Eye Toggle Button */
+    .password-input-wrap {
+      position: relative;
+      width: 100%;
+    }
+    .password-input-wrap input {
+      padding-right: 48px !important;
+    }
+    .btn-toggle-eye {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: #7884e5;
+      font-size: 1.25rem;
+      padding: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: color 0.15s ease, transform 0.15s ease;
+      line-height: 1;
+    }
+    .btn-toggle-eye:hover {
+      color: #515cb1;
+      transform: translateY(-50%) scale(1.12);
+    }
+
     /* Modal Overlay & Panel (Full Viewport Level - Hidden by default) */
     .smt-modal-overlay {
       position: fixed !important;
@@ -2275,22 +2306,41 @@
           <div id="recent-summary-list" style="max-height:220px; overflow-y:auto;"></div>
         </div>
 
-        <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting ================= -->
+        <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting (พร้อมปุ่มดวงตาเปิด-ปิด) ================= -->
         <div id="tab-change-pwd" class="settings-tab-pane" style="display:none;">
           <h6 class="font-weight-bold mb-3" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-shield-lock-fill"></i> เปลี่ยนรหัสผ่านเข้าหน้า Setting</h6>
           <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
+            
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">รหัสผ่านปัจจุบัน</label>
-              <input id="pwd-curr-input" type="password" class="form-control" placeholder="กรอกรหัสผ่านปัจจุบัน (เริ่มต้น: 1234)" autocomplete="off">
+              <div class="password-input-wrap">
+                <input id="pwd-curr-input" type="password" class="form-control" placeholder="กรอกรหัสผ่านปัจจุบัน (เริ่มต้น: 1234)" autocomplete="off">
+                <button type="button" class="btn-toggle-eye" data-target="pwd-curr-input" title="ดูรหัสผ่าน">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+              </div>
             </div>
+
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">รหัสผ่านใหม่</label>
-              <input id="pwd-new-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่" autocomplete="off">
+              <div class="password-input-wrap">
+                <input id="pwd-new-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่" autocomplete="off">
+                <button type="button" class="btn-toggle-eye" data-target="pwd-new-input" title="ดูรหัสผ่าน">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+              </div>
             </div>
+
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">ยืนยันรหัสผ่านใหม่</label>
-              <input id="pwd-confirm-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" autocomplete="off">
+              <div class="password-input-wrap">
+                <input id="pwd-confirm-input" type="password" class="form-control font-weight-bold text-primary" placeholder="กรอกรหัสผ่านใหม่อีกครั้ง" autocomplete="off">
+                <button type="button" class="btn-toggle-eye" data-target="pwd-confirm-input" title="ดูรหัสผ่าน">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+              </div>
             </div>
+
             <div id="change-pwd-msg" class="small font-weight-bold mb-3" style="display:none;"></div>
             <button id="btn-save-new-pwd" class="btn-neo btn-neo-lg neo-primary w-100">
               <i class="bi bi-shield-check"></i> บันทึกรหัสผ่านใหม่
@@ -2307,7 +2357,7 @@
            MODALS (วางนอก main-card คลุมเต็มหน้าจอ 100vw/100vh ตาม Rule 12)
            ========================================= -->
 
-      <!-- 1. Password Modal -->
+      <!-- 1. Password Modal (พร้อมปุ่มดวงตาดูรหัสผ่าน) -->
       <div id="modal-password" class="smt-modal-overlay" style="display:none;">
         <div class="smt-modal-panel" style="max-width:380px;">
           <div class="smt-modal-header">
@@ -2319,8 +2369,13 @@
               <i class="bi bi-key-fill text-primary" style="font-size:3rem;"></i>
               <p class="text-muted small mt-2">กรุณาใส่รหัสผ่านเพื่อเข้าสู่หน้าตั้งค่าระบบ</p>
             </div>
-            <div class="form-group">
-              <input id="admin-password-input" type="password" class="form-control text-center font-weight-bold" placeholder="กรอกรหัสผ่าน (Default: 1234)" style="font-size:1.2rem; letter-spacing:4px;" autocomplete="off">
+            <div class="form-group mb-2">
+              <div class="password-input-wrap">
+                <input id="admin-password-input" type="password" class="form-control text-center font-weight-bold" placeholder="กรอกรหัสผ่าน (Default: 1234)" style="font-size:1.2rem; letter-spacing:4px;" autocomplete="off">
+                <button type="button" class="btn-toggle-eye" data-target="admin-password-input" title="ดูรหัสผ่าน">
+                  <i class="bi bi-eye-fill"></i>
+                </button>
+              </div>
             </div>
             <div id="pwd-error-msg" class="text-danger small font-weight-bold" style="display:none;">รหัสผ่านไม่ถูกต้อง!</div>
           </div>
@@ -4523,6 +4578,33 @@
     });
   });
 
+
+  // Password Visibility Toggle Eye Buttons
+  document.querySelectorAll('.btn-toggle-eye').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('data-target');
+      const input = document.getElementById(targetId);
+      if (!input) return;
+      const icon = this.querySelector('i');
+      if (input.type === 'password') {
+        input.type = 'text';
+        if (icon) {
+          icon.classList.remove('bi-eye-fill');
+          icon.classList.add('bi-eye-slash-fill');
+        }
+        this.title = 'ซ่อนรหัสผ่าน';
+      } else {
+        input.type = 'password';
+        if (icon) {
+          icon.classList.remove('bi-eye-slash-fill');
+          icon.classList.add('bi-eye-fill');
+        }
+        this.title = 'ดูรหัสผ่าน';
+      }
+    });
+  });
+  
 </script>
 </body>
 </html>
