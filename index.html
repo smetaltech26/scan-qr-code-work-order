@@ -1507,41 +1507,26 @@
        SETTINGS & MODAL STYLES (Claymorphism & Mobile Safe)
        ========================================= */
     .btn-setting-gear {
-      position: absolute;
-      right: 0;
-      top: 6px;
-      width: 38px;
-      height: 38px;
+      display: inline-flex;
+      width: 32px;
+      height: 32px;
       border-radius: 50%;
-      border: 2px solid rgba(255, 255, 255, 0.82);
+      border: 1.5px solid rgba(255, 255, 255, 0.85);
       background: linear-gradient(145deg, #eef1fc, #dce2f7);
       color: var(--primary-3);
-      display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.15rem;
+      font-size: 1rem;
       cursor: pointer;
-      box-shadow: 6px 8px 16px rgba(91, 101, 149, 0.18), -4px -4px 10px rgba(255, 255, 255, 0.85);
+      box-shadow: 4px 5px 12px rgba(91, 101, 149, 0.16), -3px -3px 8px rgba(255, 255, 255, 0.85);
       transition: transform 0.2s ease, filter 0.2s ease;
-      z-index: 10;
+      vertical-align: middle;
+      padding: 0;
+      flex-shrink: 0;
     }
     .btn-setting-gear:hover {
-      transform: rotate(45deg) scale(1.06);
-      filter: saturate(1.1);
-    }
-
-    @media (max-width: 520px) {
-      .btn-setting-gear {
-        width: 32px;
-        height: 32px;
-        font-size: 0.95rem;
-        top: 4px;
-      }
-      .header {
-        position: relative;
-        padding-left: 36px;
-        padding-right: 36px;
-      }
+      transform: rotate(45deg) scale(1.08);
+      filter: saturate(1.15);
     }
 
     .settings-tabs {
@@ -1767,10 +1752,7 @@
 </head>
 <body>
   <div class="app-container">
-    <header class="header" style="position: relative;">
-      <button id="btn-open-settings" class="btn-setting-gear" title="ตั้งค่าระบบ (Settings)">
-        <i class="bi bi-gear-fill"></i>
-      </button>
+    <header class="header">
       <h1 id="main-title" style="display: flex; align-items: center; justify-content: center; gap: 10px;">
         <img src="https://drive.google.com/thumbnail?id=1NN5A_nOU7IcLVCV_ooUqcsdeIV3s4OHQ&sz=w300"
           alt="Company Logo"
@@ -1778,7 +1760,12 @@
         Scan QR Code 
         <span>V5.2</span>
       </h1>
-      <p class="subtitle" id="subtitle">เลือกเมนูเพื่อเริ่มทำงาน</p>
+      <div style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 0.35rem;">
+        <p class="subtitle mb-0" id="subtitle">เลือกเมนูเพื่อเริ่มทำงาน</p>
+        <button id="btn-open-settings" class="btn-setting-gear" title="ตั้งค่าระบบ (Settings)">
+          <i class="bi bi-gear-fill"></i>
+        </button>
+      </div>
     </header>
 
     <main class="main-card">
