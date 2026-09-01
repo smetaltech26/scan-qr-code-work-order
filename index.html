@@ -1710,25 +1710,157 @@
     }
 
     .part-search-list {
-      max-height: 220px;
+      max-height: 320px;
       overflow-y: auto;
-      border: 2px solid rgba(255, 255, 255, 0.7);
+      border: 2px solid rgba(120, 132, 229, 0.35);
       border-radius: 18px;
       background: #ffffff;
       margin-top: 6px;
-      box-shadow: 8px 10px 22px rgba(91, 101, 149, 0.15);
+      box-shadow: 0 16px 36px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(0,0,0,0.05);
       position: absolute;
+      left: 0;
+      right: 0;
       width: 100%;
-      z-index: 50;
+      z-index: 1050;
     }
     .part-search-item {
-      padding: 10px 14px;
+      padding: 11px 16px;
       border-bottom: 1px solid #edf2f7;
       cursor: pointer;
       transition: background 0.15s ease;
     }
     .part-search-item:hover { background: #f0f4ff; }
     .part-search-item:last-child { border-bottom: none; }
+
+    /* Desktop View Expansion & Modal Fixes */
+    @media (min-width: 769px) {
+      #settings-section {
+        min-height: 560px;
+      }
+      .main-card {
+        min-height: 520px;
+        overflow: visible !important;
+      }
+      .app-container.wide-mode {
+        max-width: 96vw !important;
+        width: 96vw !important;
+        transition: max-width 0.3s ease, width 0.3s ease;
+      }
+    }
+
+    #tab-part-stock {
+      min-height: 420px;
+    }
+
+    /* All Parts Excel-like Table Styling (Photo 2) */
+    .parts-table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      max-height: 580px;
+      overflow-y: auto;
+      border: 2px solid #000000;
+      border-radius: 8px;
+      background: #ffffff;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      margin-top: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .parts-excel-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: 'Kanit', -apple-system, sans-serif;
+      font-size: 0.86rem;
+      color: #000000;
+      white-space: nowrap;
+    }
+
+    .parts-excel-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 15;
+      background: #ffff00 !important;
+      color: #000000 !important;
+      font-weight: 800 !important;
+      font-size: 0.88rem;
+      text-align: center;
+      padding: 8px 10px;
+      border: 1.5px solid #000000 !important;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .th-sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.15s ease;
+    }
+    .th-sortable:hover {
+      background: #fde047 !important;
+    }
+    .th-sortable i {
+      font-size: 0.72rem;
+      margin-left: 3px;
+      opacity: 0.6;
+    }
+    .th-sortable.sorted-asc i, .th-sortable.sorted-desc i {
+      opacity: 1;
+      color: #1d4ed8;
+    }
+
+    .parts-excel-table tbody td {
+      padding: 5px 8px;
+      border: 1px solid #cbd5e1;
+      vertical-align: middle;
+      text-align: center;
+      background: #ffffff;
+    }
+
+    .parts-excel-table tbody tr:hover td {
+      background-color: #f1f5f9;
+    }
+
+    .parts-excel-table tbody tr.row-modified td {
+      background-color: #fefce8 !important;
+    }
+
+    .parts-excel-table .cell-left {
+      text-align: left;
+      font-weight: 600;
+    }
+
+    .parts-excel-table .cell-fg {
+      background-color: #00e5ff !important;
+      color: #000000 !important;
+      font-weight: 700 !important;
+    }
+
+    .parts-excel-table .cell-total {
+      font-weight: 800 !important;
+      color: #0f172a;
+      background-color: #f8fafc;
+    }
+
+    .tbl-stock-input {
+      width: 62px;
+      height: 30px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.88rem;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 6px;
+      background: #ffffff;
+      color: #0f172a;
+      padding: 2px 4px;
+      transition: all 0.15s ease;
+    }
+
+    .tbl-stock-input:focus {
+      border-color: #3b82f6;
+      background: #eff6ff;
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
 
     .log-item-card {
       background: linear-gradient(145deg, #ffffff, #f4f7fc);
@@ -2130,6 +2262,9 @@
               <i class="bi bi-search"></i> ค้นหา/แก้ไข Part
             </h6>
             <div class="d-flex" style="gap: 6px;">
+              <button id="btn-show-all-parts" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:34px; padding:4px 12px; font-size:0.8rem; border-radius:12px;">
+                <i class="bi bi-table"></i> แสดงข้อมูลทั้งหมด
+              </button>
               <button id="btn-clear-part-search" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; min-height:34px; padding:4px 10px; font-size:0.8rem; border-radius:12px;">
                 <i class="bi bi-eraser-fill"></i> ล้าง
               </button>
@@ -2149,6 +2284,67 @@
               </div>
             </div>
             <div id="part-search-dropdown" class="part-search-list" style="display:none;"></div>
+          </div>
+
+          <!-- View: ตารางแสดงข้อมูลทั้งหมด (All Parts Table) -->
+          <div id="all-parts-table-container" class="mt-3 mb-3" style="display:none;">
+            <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap" style="gap: 8px;">
+              <div class="d-flex align-items-center" style="gap: 8px;">
+                <span class="badge badge-warning" style="background:#ffff00; color:#000; font-size:0.88rem; font-weight:800; border:1.5px solid #000; padding:6px 12px; border-radius:10px;">
+                  <i class="bi bi-grid-3x3-gap-fill"></i> ข้อมูล Part & สต็อกทั้งหมด
+                </span>
+                <span id="all-parts-count" class="badge badge-secondary" style="font-size:0.82rem; background:#64748b; color:#fff;">0 รายการ</span>
+              </div>
+              <div class="d-flex" style="gap: 6px;">
+                <button id="btn-refresh-all-parts" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:32px; padding:3px 10px; font-size:0.78rem; border-radius:10px;" title="รีเฟรชข้อมูล">
+                  <i class="bi bi-arrow-clockwise"></i> รีเฟรช
+                </button>
+                <button id="btn-close-all-parts" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; min-height:32px; padding:3px 10px; font-size:0.78rem; border-radius:10px;">
+                  <i class="bi bi-x-lg"></i> ปิดตาราง
+                </button>
+              </div>
+            </div>
+
+            <div class="form-row mb-2">
+              <div class="col-12">
+                <div class="input-group input-group-sm">
+                  <div class="input-group-prepend">
+                    <span class="input-group-text bg-white" style="border-radius:12px 0 0 12px; border-color:#cbd5e1;"><i class="bi bi-search"></i></span>
+                  </div>
+                  <input id="filter-all-parts-input" type="text" class="form-control" style="min-height:38px; font-size:0.88rem; border-radius:0 12px 12px 0;" placeholder="พิมพ์ ITEM, Name Part, Model หรือ Drawing เพื่อค้นหาในตาราง...">
+                </div>
+              </div>
+            </div>
+
+            <div class="parts-table-wrapper">
+              <table class="parts-excel-table" id="all-parts-table">
+                <thead>
+                  <tr>
+                    <th class="th-sortable" data-sort-key="item">ITEM <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="name_part">NAME PART <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="model">MODEL <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="drawing">DRAWING <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="receiving">Receiving <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="cutting">Cutting <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="milling">Milling <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="cnc">CNC <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="grinding">Grinding <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="finished_goods" style="background:#00e5ff !important; color:#000 !important;">Finished Goods <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="ng">NG <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="total">Total <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="price">PRICE <i class="bi bi-arrow-down-up"></i></th>
+                    <th class="th-sortable" data-sort-key="rm_price">RM PRICE <i class="bi bi-arrow-down-up"></i></th>
+                    <th style="background:#e2e8f0 !important; color:#334155 !important;">การจัดการ</th>
+                  </tr>
+                </thead>
+                <tbody id="all-parts-tbody">
+                  <!-- Dynamic Rows -->
+                </tbody>
+              </table>
+            </div>
+            <div class="d-flex justify-content-between align-items-center mt-2 small text-muted">
+              <span><i class="bi bi-info-circle"></i> สามารถพิมพ์แก้ไขตัวเลข Stock แต่ละ Process ในช่องได้โดยตรง แล้วกดปุ่ม 💾 บันทึก</span>
+            </div>
           </div>
 
           <div id="part-edit-container" class="mt-3" style="display:none;">
@@ -2605,7 +2801,7 @@
         updates['ng'] = (Number(inv.ng || 0)) + ngQty;
         
         let newTotal = 0;
-        const allFields = ['receiving', 'cutting', 'milling', 'cnc', 'grinding', 'finished_goods'];
+        const allFields = ['receiving', 'cutting', 'milling', 'cnc', 'grinding', 'finished_goods', 'ng'];
         for (const f of allFields) { newTotal += Number(updates[f] !== undefined ? updates[f] : inv[f]); }
         updates['total'] = newTotal;
 
@@ -2681,6 +2877,14 @@
     // =================================================================
     // Settings API Functions
     // =================================================================
+    runner.getAllInventoryItems = async function() {
+      try {
+        const { data, error } = await sb.from('inventory').select('*').order('name_part', { ascending: true }).limit(2000);
+        if (error) throw error;
+        _success(data || []);
+      } catch (err) { _failure(err); }
+    };
+
     runner.searchInventoryAll = async function(query) {
       try {
         const q = String(query || '').trim();
@@ -2952,6 +3156,15 @@
       btnClosePwdModal: $('#btn-close-pwd-modal'),
 
       // Part Edit
+      btnShowAllParts: $('#btn-show-all-parts'),
+      allPartsTableContainer: $('#all-parts-table-container'),
+      allPartsCount: $('#all-parts-count'),
+      filterAllPartsInput: $('#filter-all-parts-input'),
+      btnRefreshAllParts: $('#btn-refresh-all-parts'),
+      btnCloseAllParts: $('#btn-close-all-parts'),
+      allPartsTbody: $('#all-parts-tbody'),
+      allPartsTable: $('#all-parts-table'),
+
       settingPartSearch: $('#setting-part-search'),
       settingPartSearchBtn: $('#setting-part-search-btn'),
       btnClearPartSearch: $('#btn-clear-part-search'),
@@ -3045,6 +3258,11 @@
       
       // Settings State
       currentLoadedPart: null,
+      allPartsList: [],
+      allPartsLoading: false,
+      tableSortKey: 'name_part',
+      tableSortAsc: true,
+      columnFilters: {},
       selectedLogIds: new Set(),
       confirmCallback: null
     };
@@ -3641,6 +3859,273 @@
       showToast('ล้างข้อมูลการค้นหา Part เรียบร้อย', 'info', 1500);
     });
 
+    // --- All Parts Table (แสดงข้อมูลทั้งหมด) ---
+    ui.btnShowAllParts.addEventListener('click', () => {
+      if (ui.allPartsTableContainer.style.display === 'none') {
+        ui.allPartsTableContainer.style.display = 'block';
+        const appCont = document.querySelector('.app-container');
+        if (appCont) appCont.classList.add('wide-mode');
+        loadAllPartsData();
+      } else {
+        ui.allPartsTableContainer.style.display = 'none';
+        const appCont = document.querySelector('.app-container');
+        if (appCont) appCont.classList.remove('wide-mode');
+      }
+    });
+
+    ui.btnCloseAllParts.addEventListener('click', () => {
+      ui.allPartsTableContainer.style.display = 'none';
+      const appCont = document.querySelector('.app-container');
+      if (appCont) appCont.classList.remove('wide-mode');
+    });
+
+    ui.btnRefreshAllParts.addEventListener('click', () => {
+      loadAllPartsData();
+    });
+
+    ui.filterAllPartsInput.addEventListener('input', () => {
+      filterAllPartsTable();
+    });
+
+    function loadAllPartsData() {
+      showLoading(true, 'กำลังโหลดข้อมูล Part ทั้งหมด...');
+      ui.allPartsTbody.innerHTML = `<tr><td colspan="15" class="text-center py-4 text-muted"><i class="bi bi-hourglass-split"></i> กำลังโหลดข้อมูล...</td></tr>`;
+      
+      google.script.run
+        .withSuccessHandler(parts => {
+          showLoading(false);
+          state.allPartsList = parts || [];
+          applyAllTableFilters();
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          ui.allPartsTbody.innerHTML = `<tr><td colspan="15" class="text-center text-danger py-3">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+          showToast('โหลดข้อมูล Part ล้มเหลว: ' + err.message, 'error', 4000);
+        })
+        .getAllInventoryItems();
+    }
+
+    function sortParts(list, key, asc) {
+      return [...list].sort((a, b) => {
+        let va = a[key];
+        let vb = b[key];
+        if (key === 'total') {
+          va = (Number(a.receiving)||0) + (Number(a.cutting)||0) + (Number(a.milling)||0) + (Number(a.cnc)||0) + (Number(a.grinding)||0) + (Number(a.finished_goods)||0) + (Number(a.ng)||0);
+          vb = (Number(b.receiving)||0) + (Number(b.cutting)||0) + (Number(b.milling)||0) + (Number(b.cnc)||0) + (Number(b.grinding)||0) + (Number(b.finished_goods)||0) + (Number(b.ng)||0);
+        }
+        if (typeof va === 'number' || typeof vb === 'number' || ['receiving','cutting','milling','cnc','grinding','finished_goods','ng','total','price','rm_price'].includes(key)) {
+          const numA = Number(va) || 0;
+          const numB = Number(vb) || 0;
+          return asc ? numA - numB : numB - numA;
+        }
+        const strA = String(va || '').trim().toLowerCase();
+        const strB = String(vb || '').trim().toLowerCase();
+        return asc ? strA.localeCompare(strB, 'th') : strB.localeCompare(strA, 'th');
+      });
+    }
+
+    function applyAllTableFilters() {
+      const globalQ = String(ui.filterAllPartsInput.value || '').trim().toLowerCase();
+      const isFiltered = Boolean(globalQ);
+
+      let filtered = state.allPartsList;
+      if (globalQ) {
+        filtered = state.allPartsList.filter(p => {
+          const item = String(p.item || '').toLowerCase();
+          const name = String(p.name_part || '').toLowerCase();
+          const model = String(p.model || '').toLowerCase();
+          const draw = String(p.drawing || '').toLowerCase();
+          return item.includes(globalQ) || name.includes(globalQ) || model.includes(globalQ) || draw.includes(globalQ);
+        });
+      }
+
+      // Sort by chosen sort key (default name_part A-Z)
+      const sorted = sortParts(filtered, state.tableSortKey || 'name_part', state.tableSortAsc !== false);
+      renderAllPartsTable(sorted, isFiltered);
+      updateSortHeaderIcons();
+    }
+
+    function updateSortHeaderIcons() {
+      document.querySelectorAll('#all-parts-table th.th-sortable').forEach(th => {
+        const key = th.getAttribute('data-sort-key');
+        const icon = th.querySelector('i');
+        th.classList.remove('sorted-asc', 'sorted-desc');
+        if (key === state.tableSortKey) {
+          if (state.tableSortAsc) {
+            th.classList.add('sorted-asc');
+            if (icon) icon.className = 'bi bi-sort-alpha-down';
+          } else {
+            th.classList.add('sorted-desc');
+            if (icon) icon.className = 'bi bi-sort-alpha-up-alt';
+          }
+        } else {
+          if (icon) icon.className = 'bi bi-arrow-down-up';
+        }
+      });
+    }
+
+    // Sort Headers Click Handler
+    document.querySelectorAll('#all-parts-table th.th-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const key = th.getAttribute('data-sort-key');
+        if (!key) return;
+        if (state.tableSortKey === key) {
+          state.tableSortAsc = !state.tableSortAsc;
+        } else {
+          state.tableSortKey = key;
+          state.tableSortAsc = true;
+        }
+        applyAllTableFilters();
+      });
+    });
+
+    function filterAllPartsTable() {
+      applyAllTableFilters();
+    }
+
+    function renderAllPartsTable(parts, isFiltered = false) {
+      ui.allPartsCount.textContent = isFiltered 
+        ? `${parts.length} จาก ${state.allPartsList.length} รายการ`
+        : `${parts.length} รายการ`;
+
+      if (!parts || parts.length === 0) {
+        ui.allPartsTbody.innerHTML = `<tr><td colspan="15" class="text-center py-4 text-muted">ไม่พบข้อมูล Part ที่ตรงกับเงื่อนไข</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      parts.forEach(p => {
+        const r = Number(p.receiving) || 0;
+        const c = Number(p.cutting) || 0;
+        const m = Number(p.milling) || 0;
+        const cnc = Number(p.cnc) || 0;
+        const g = Number(p.grinding) || 0;
+        const fg = Number(p.finished_goods) || 0;
+        const ng = Number(p.ng) || 0;
+        const calcTotal = r + c + m + cnc + g + fg + ng;
+
+        const priceDisplay = (p.price !== null && p.price !== undefined && p.price !== '') ? Number(p.price).toFixed(2) : '-';
+        const rmPriceDisplay = (p.rm_price !== null && p.rm_price !== undefined && p.rm_price !== '') ? Number(p.rm_price).toFixed(2) : '-';
+
+        html += `
+          <tr data-id="${p.id}" data-item="${p.item}">
+            <td class="font-weight-bold cell-left">${p.item}</td>
+            <td class="cell-left" style="max-width:220px; overflow:hidden; text-overflow:ellipsis;" title="${p.name_part || ''}">${p.name_part || '-'}</td>
+            <td>${p.model || '-'}</td>
+            <td>${p.drawing || '-'}</td>
+            <td><input type="number" min="0" class="tbl-stock-input" data-col="receiving" value="${r}"></td>
+            <td><input type="number" min="0" class="tbl-stock-input" data-col="cutting" value="${c}"></td>
+            <td><input type="number" min="0" class="tbl-stock-input" data-col="milling" value="${m}"></td>
+            <td><input type="number" min="0" class="tbl-stock-input" data-col="cnc" value="${cnc}"></td>
+            <td><input type="number" min="0" class="tbl-stock-input" data-col="grinding" value="${g}"></td>
+            <td class="cell-fg"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:#ffffff; border-color:#0097a7; color:#006064;" data-col="finished_goods" value="${fg}"></td>
+            <td class="cell-ng"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:#ffffff; border-color:#f87171; color:#b91c1c;" data-col="ng" value="${ng}"></td>
+            <td class="cell-total text-center font-weight-bold" data-total-cell>${calcTotal}</td>
+            <td class="text-right font-weight-bold text-primary">${priceDisplay}</td>
+            <td class="text-right text-muted">${rmPriceDisplay}</td>
+            <td>
+              <div class="d-flex justify-content-center" style="gap:4px;">
+                <button type="button" class="btn-save-row btn-neo btn-neo-sm neo-success" style="width:auto; min-height:28px; padding:2px 8px; font-size:0.75rem; border-radius:8px;" title="บันทึก Stock รายการนี้">
+                  <i class="bi bi-floppy-fill"></i> บันทึก
+                </button>
+                <button type="button" class="btn-edit-row-full btn-neo btn-neo-sm btn-neo-outline" style="width:auto; min-height:28px; padding:2px 7px; font-size:0.75rem; border-radius:8px;" title="แก้ไขข้อมูลเต็ม / ลบ">
+                  <i class="bi bi-pencil-fill"></i>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      });
+
+      ui.allPartsTbody.innerHTML = html;
+
+      // Event listeners for inline stock inputs
+      ui.allPartsTbody.querySelectorAll('.tbl-stock-input').forEach(input => {
+        input.addEventListener('input', e => {
+          const tr = e.target.closest('tr');
+          if (!tr) return;
+          const r = Number(tr.querySelector('[data-col="receiving"]')?.value) || 0;
+          const c = Number(tr.querySelector('[data-col="cutting"]')?.value) || 0;
+          const m = Number(tr.querySelector('[data-col="milling"]')?.value) || 0;
+          const cnc = Number(tr.querySelector('[data-col="cnc"]')?.value) || 0;
+          const g = Number(tr.querySelector('[data-col="grinding"]')?.value) || 0;
+          const fg = Number(tr.querySelector('[data-col="finished_goods"]')?.value) || 0;
+          const ng = Number(tr.querySelector('[data-col="ng"]')?.value) || 0;
+          const newTotal = r + c + m + cnc + g + fg + ng;
+
+          const totalCell = tr.querySelector('[data-total-cell]');
+          if (totalCell) totalCell.textContent = newTotal;
+          tr.classList.add('row-modified');
+        });
+      });
+
+      // Event listeners for Save buttons
+      ui.allPartsTbody.querySelectorAll('.btn-save-row').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const tr = e.target.closest('tr');
+          if (!tr) return;
+          const id = tr.getAttribute('data-id');
+          const itemCode = tr.getAttribute('data-item');
+
+          const r = Number(tr.querySelector('[data-col="receiving"]')?.value) || 0;
+          const c = Number(tr.querySelector('[data-col="cutting"]')?.value) || 0;
+          const m = Number(tr.querySelector('[data-col="milling"]')?.value) || 0;
+          const cnc = Number(tr.querySelector('[data-col="cnc"]')?.value) || 0;
+          const g = Number(tr.querySelector('[data-col="grinding"]')?.value) || 0;
+          const fg = Number(tr.querySelector('[data-col="finished_goods"]')?.value) || 0;
+          const ng = Number(tr.querySelector('[data-col="ng"]')?.value) || 0;
+          const newTotal = r + c + m + cnc + g + fg + ng;
+
+          const updates = {
+            receiving: r,
+            cutting: c,
+            milling: m,
+            cnc: cnc,
+            grinding: g,
+            finished_goods: fg,
+            ng: ng,
+            total: newTotal
+          };
+
+          showLoading(true, `กำลังบันทึกสต็อก ${itemCode}...`);
+          google.script.run
+            .withSuccessHandler(res => {
+              showLoading(false);
+              tr.classList.remove('row-modified');
+              showToast(`บันทึกสต็อก ${itemCode} สำเร็จ!`, 'success', 2500);
+
+              // Update in state.allPartsList
+              const partInState = state.allPartsList.find(x => x.id === id);
+              if (partInState) {
+                Object.assign(partInState, updates);
+              }
+              // If currently loaded in edit form, update it too
+              if (state.currentLoadedPart && state.currentLoadedPart.id === id) {
+                selectPartForEdit(partInState || Object.assign({}, state.currentLoadedPart, updates));
+              }
+            })
+            .withFailureHandler(err => {
+              showLoading(false);
+              showToast(`บันทึกไม่สำเร็จ: ${err.message}`, 'error', 4000);
+            })
+            .updateInventoryItem(id, updates);
+        });
+      });
+
+      // Event listeners for Full Edit button
+      ui.allPartsTbody.querySelectorAll('.btn-edit-row-full').forEach(btn => {
+        btn.addEventListener('click', e => {
+          const tr = e.target.closest('tr');
+          if (!tr) return;
+          const id = tr.getAttribute('data-id');
+          const found = state.allPartsList.find(x => x.id === id);
+          if (found) {
+            selectPartForEdit(found);
+            ui.partEditContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        });
+      });
+    }
+
     function searchParts(q) {
       showLoading(true, 'กำลังค้นหา Part...');
       google.script.run
@@ -3726,7 +4211,8 @@
       const cnc = Number(ui.editStockCnc.value) || 0;
       const g = Number(ui.editStockGrinding.value) || 0;
       const fg = Number(ui.editStockFg.value) || 0;
-      const total = r + c + m + cnc + g + fg;
+      const ng = Number(ui.editStockNg.value) || 0;
+      const total = r + c + m + cnc + g + fg + ng;
       ui.editStockTotal.value = total;
     }
 
@@ -3758,6 +4244,14 @@
         .withSuccessHandler(res => {
           showLoading(false);
           showToast(res && res.message ? res.message : 'บันทึกสำเร็จ', 'success');
+          // Update in state.allPartsList if loaded
+          const partInState = state.allPartsList.find(x => x.id === id);
+          if (partInState) {
+            Object.assign(partInState, updates);
+            if (ui.allPartsTableContainer.style.display !== 'none') {
+              filterAllPartsTable();
+            }
+          }
         })
         .withFailureHandler(err => {
           showLoading(false);
@@ -3780,6 +4274,11 @@
             ui.partEditContainer.style.display = 'none';
             state.currentLoadedPart = null;
             ui.settingPartSearch.value = '';
+            // Remove from state.allPartsList if loaded
+            state.allPartsList = state.allPartsList.filter(x => x.id !== id);
+            if (ui.allPartsTableContainer.style.display !== 'none') {
+              filterAllPartsTable();
+            }
           })
           .withFailureHandler(err => {
             showLoading(false);
@@ -3822,7 +4321,8 @@
       const cnc = Number(ui.newStockCnc.value) || 0;
       const g = Number(ui.newStockGrinding.value) || 0;
       const fg = Number(ui.newStockFg.value) || 0;
-      ui.newStockTotal.value = r + c + m + cnc + g + fg;
+      const ng = Number(ui.newStockNg.value) || 0;
+      ui.newStockTotal.value = r + c + m + cnc + g + fg + ng;
     }
     document.querySelectorAll('.new-stock-calc').forEach(input => {
       input.addEventListener('input', calcNewTotal);
@@ -4487,6 +4987,9 @@
       ui.stockSection && (ui.stockSection.style.display='none');
       ui.reportSection && (ui.reportSection.style.display='none');
       ui.settingsSection && (ui.settingsSection.style.display='none');
+      if (ui.allPartsTableContainer) ui.allPartsTableContainer.style.display='none';
+      const appCont = document.querySelector('.app-container');
+      if (appCont) appCont.classList.remove('wide-mode');
       ui.menuSection.style.display='grid';
       ui.subtitle.textContent='เลือกเมนูเพื่อเริ่มทำงาน';
       window.scrollTo(0, 0);
