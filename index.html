@@ -2684,6 +2684,58 @@
         </div>
       </div>
 
+      <!-- 4. Edit Production Log Modal -->
+      <div id="modal-edit-log" class="smt-modal-overlay" style="display:none;">
+        <div class="smt-modal-panel" style="max-width:440px;">
+          <div class="smt-modal-header" style="background:#f0f9ff; border-bottom:1px solid #bae6fd;">
+            <h6 class="font-weight-bold mb-0 text-primary"><i class="bi bi-pencil-square"></i> แก้ไขประวัติการผลิต (Log)</h6>
+            <button type="button" class="close" id="btn-close-edit-log-modal" style="font-size:1.4rem;">&times;</button>
+          </div>
+          <div class="smt-modal-body">
+            <input type="hidden" id="edit-log-id">
+            
+            <div class="p-2 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
+              <div class="d-flex justify-content-between align-items-center">
+                <span class="badge badge-primary font-weight-bold" id="edit-log-badge-item" style="font-size:0.9rem;">ITEM</span>
+                <span class="badge badge-secondary" id="edit-log-badge-process">Process</span>
+              </div>
+              <div class="small text-dark font-weight-bold mt-1" id="edit-log-namepart">-</div>
+              <div class="small text-muted d-flex justify-content-between mt-1">
+                <span id="edit-log-menu-text">เมนู: -</span>
+                <span id="edit-log-employee">โดย: -</span>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-6 mb-2">
+                <label class="small font-weight-bold text-success mb-1">จำนวนของดี (Good Qty)</label>
+                <input id="edit-log-good-qty" type="number" min="0" class="form-control text-center font-weight-bold text-success" style="min-height:44px; font-size:1.1rem;">
+              </div>
+              <div class="form-group col-6 mb-2">
+                <label class="small font-weight-bold text-danger mb-1">จำนวนของเสีย (NG Qty)</label>
+                <input id="edit-log-ng-qty" type="number" min="0" class="form-control text-center font-weight-bold text-danger" style="min-height:44px; font-size:1.1rem;">
+              </div>
+            </div>
+
+            <div class="form-group mb-2">
+              <label class="small font-weight-bold text-muted mb-1"><i class="bi bi-clock"></i> วันที่และเวลาที่บันทึก</label>
+              <input id="edit-log-timestamp" type="datetime-local" class="form-control" style="min-height:44px;">
+            </div>
+
+            <div id="edit-log-preview-box" class="p-2 mt-2 small" style="background:#fffbeb; border:1px solid #fde68a; border-radius:10px;">
+              <div class="font-weight-bold text-dark mb-1"><i class="bi bi-info-circle-fill text-warning"></i> ผลการอัปเดตสต็อกและยอดขายอัตโนมัติ:</div>
+              <div id="edit-log-preview-text" class="text-muted small">ระบบจะคำนวณผลต่างและอัปเดตสต็อก / ยอดขายให้อัตโนมัติ</div>
+            </div>
+          </div>
+          <div class="smt-modal-footer justify-content-between">
+            <button id="btn-cancel-edit-log" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; padding:8px 18px;">ยกเลิก</button>
+            <button id="btn-save-edit-log" class="btn-neo btn-neo-sm neo-success" style="width:auto; padding:8px 22px;">
+              <i class="bi bi-floppy-fill"></i> บันทึกการแก้ไข
+            </button>
+          </div>
+        </div>
+      </div>
+
   </div>
 
 <script>
@@ -2979,6 +3031,129 @@
       } catch (err) { _failure(err); }
     };
 
+    runner.updateProductionLog = async function(logId, newGood, newNg, newTimestamp) {
+      try {
+        const { data: log, error: logErr } = await sb.from('production_logs').select('*').eq('id', logId).single();
+        if (logErr || !log) throw new Error('ไม่พบรายการ Log ที่ต้องการแก้ไข');
+
+        const oldGood = Number(log.good_qty || 0);
+        const oldNg = Number(log.ng_qty || 0);
+        const oldTime = log.timestamp;
+        const itemCode = log.item;
+        const procName = String(log.process || '').trim();
+        const menuName = String(log.menu || '').trim();
+
+        const diffGood = newGood - oldGood;
+        const diffNg = newNg - oldNg;
+        const newTotalQty = newGood + newNg;
+
+        // 1. Update Inventory Stock according to Delta
+        const { data: inv } = await sb.from('inventory').select('*').eq('item', itemCode).maybeSingle();
+        if (inv) {
+          const invUpdates = {};
+          let shouldUpdateInv = false;
+
+          const procNorm = normU(procName);
+          const isShip = (procNorm === 'SHIP' || menuName === 'ส่งสินค้า');
+          const isFinish = (menuName === 'เสร็จการทำงาน' || procNorm === 'RECEIVING' || ['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS','FINISHED_GOODS'].includes(procNorm));
+
+          if (isShip) {
+            // Ship reduces Finished Goods. If newGood is bigger, reduce FG more. If smaller, restore FG.
+            if (diffGood !== 0) {
+              const currentFg = Number(inv.finished_goods || 0);
+              invUpdates.finished_goods = Math.max(0, currentFg - diffGood);
+              shouldUpdateInv = true;
+            }
+          } else if (isFinish) {
+            const procFieldMap = {
+              'RECEIVING': 'receiving',
+              'CUTTING': 'cutting',
+              'MILLING': 'milling',
+              'CNC': 'cnc',
+              'GRINDING': 'grinding',
+              'FINISH_GOODS': 'finished_goods',
+              'FINISHED_GOODS': 'finished_goods'
+            };
+            const destField = procFieldMap[procNorm];
+            if (destField && diffGood !== 0) {
+              const currentVal = Number(inv[destField] || 0);
+              invUpdates[destField] = Math.max(0, currentVal + diffGood);
+              shouldUpdateInv = true;
+            }
+            if (diffNg !== 0) {
+              const currentNg = Number(inv.ng || 0);
+              invUpdates.ng = Math.max(0, currentNg + diffNg);
+              shouldUpdateInv = true;
+            }
+          }
+
+          if (shouldUpdateInv) {
+            // Recalculate Total
+            const allFields = ['receiving', 'cutting', 'milling', 'cnc', 'grinding', 'finished_goods', 'ng'];
+            let newTotal = 0;
+            for (const f of allFields) {
+              newTotal += Number(invUpdates[f] !== undefined ? invUpdates[f] : inv[f] || 0);
+            }
+            invUpdates.total = newTotal;
+            await sb.from('inventory').update(invUpdates).eq('id', inv.id);
+          }
+
+          // 2. If it's a Ship transaction, update daily_summary
+          if (isShip) {
+            const itemPrice = Number(inv.price || 0);
+            const oldAmount = oldGood * itemPrice;
+            const newAmount = newGood * itemPrice;
+            const diffAmount = newAmount - oldAmount;
+
+            const oldDateStr = oldTime ? new Date(oldTime).toISOString().split('T')[0] : null;
+            const newDateStr = newTimestamp ? new Date(newTimestamp).toISOString().split('T')[0] : null;
+
+            if (oldDateStr && newDateStr && oldDateStr === newDateStr) {
+              if (diffAmount !== 0) {
+                const { data: ds } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
+                if (ds) {
+                  const newDaily = Math.max(0, (Number(ds.daily_income || 0)) + diffAmount);
+                  const newAccum = Math.max(0, (Number(ds.accumulate_income || 0)) + diffAmount);
+                  await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', newDateStr);
+                } else {
+                  await sb.from('daily_summary').insert({ date: newDateStr, daily_income: newAmount, accumulate_income: newAmount });
+                }
+              }
+            } else if (oldDateStr && newDateStr && oldDateStr !== newDateStr) {
+              // Deduct from old date
+              const { data: oldDs } = await sb.from('daily_summary').select('*').eq('date', oldDateStr).maybeSingle();
+              if (oldDs) {
+                const newDaily = Math.max(0, (Number(oldDs.daily_income || 0)) - oldAmount);
+                const newAccum = Math.max(0, (Number(oldDs.accumulate_income || 0)) - oldAmount);
+                await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', oldDateStr);
+              }
+              // Add to new date
+              const { data: newDs } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
+              if (newDs) {
+                const newDaily = Math.max(0, (Number(newDs.daily_income || 0)) + newAmount);
+                const newAccum = Math.max(0, (Number(newDs.accumulate_income || 0)) + newAmount);
+                await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', newDateStr);
+              } else {
+                await sb.from('daily_summary').insert({ date: newDateStr, daily_income: newAmount, accumulate_income: newAmount });
+              }
+            }
+          }
+        }
+
+        // 3. Update the production log itself
+        const { error: updLogErr } = await sb.from('production_logs').update({
+          good_qty: newGood,
+          ng_qty: newNg,
+          total_qty: newTotalQty,
+          timestamp: new Date(newTimestamp).toISOString()
+        }).eq('id', logId);
+
+        if (updLogErr) throw updLogErr;
+
+        _success({ ok: true, message: 'แก้ไขประวัติการผลิตและอัปเดตสต็อก/ยอดขายเรียบร้อยแล้ว' });
+      } catch (err) { _failure(err); }
+    };
+
     runner.getDailySummaryByDate = async function(dateStr) {
       try {
         const { data, error } = await sb.from('daily_summary').select('*').eq('date', dateStr).maybeSingle();
@@ -3239,7 +3414,23 @@
       confirmModalText: $('#confirm-modal-text'),
       btnCloseConfirmModal: $('#btn-close-confirm-modal'),
       btnConfirmCancel: $('#btn-confirm-cancel'),
-      btnConfirmOk: $('#btn-confirm-ok')
+      btnConfirmOk: $('#btn-confirm-ok'),
+
+      // Edit Log Modal
+      modalEditLog: $('#modal-edit-log'),
+      btnCloseEditLogModal: $('#btn-close-edit-log-modal'),
+      btnCancelEditLog: $('#btn-cancel-edit-log'),
+      btnSaveEditLog: $('#btn-save-edit-log'),
+      editLogId: $('#edit-log-id'),
+      editLogBadgeItem: $('#edit-log-badge-item'),
+      editLogBadgeProcess: $('#edit-log-badge-process'),
+      editLogNamepart: $('#edit-log-namepart'),
+      editLogMenuText: $('#edit-log-menu-text'),
+      editLogEmployee: $('#edit-log-employee'),
+      editLogGoodQty: $('#edit-log-good-qty'),
+      editLogNgQty: $('#edit-log-ng-qty'),
+      editLogTimestamp: $('#edit-log-timestamp'),
+      editLogPreviewText: $('#edit-log-preview-text')
     };
 
     const state = {
@@ -4398,7 +4589,11 @@
         .getProductionLogsFiltered({ keyword, date, limit: 80 });
     }
 
+    let currentLogsList = [];
+    let currentEditingLog = null;
+
     function renderLogsList(logs) {
+      currentLogsList = logs || [];
       if (!logs || logs.length === 0) {
         ui.logItemsContainer.innerHTML = '<div class="p-4 text-center text-muted">ไม่พบประวัติการผลิตตามเงื่อนไข</div>';
         return;
@@ -4418,9 +4613,14 @@
                 <b class="text-primary">${l.item}</b>
                 <span class="badge badge-secondary ml-2">${l.process}</span>
               </div>
-              <button class="btn btn-sm btn-outline-danger btn-delete-single-log" data-id="${l.id}" title="ลบรายการนี้" style="padding:2px 8px; border-radius:8px;">
-                <i class="bi bi-trash"></i>
-              </button>
+              <div class="d-flex align-items-center" style="gap:6px;">
+                <button class="btn btn-sm btn-outline-primary btn-edit-single-log" data-id="${l.id}" title="แก้ไขรายการนี้" style="padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">
+                  <i class="bi bi-pencil-square"></i> แก้ไข
+                </button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-single-log" data-id="${l.id}" title="ลบรายการนี้" style="padding:2px 8px; border-radius:8px;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
             </div>
             <div class="small text-muted d-flex justify-content-between">
               <span>${l.name_part || '-'} (${l.menu || '-'})</span>
@@ -4450,6 +4650,18 @@
         });
       });
 
+      // Event listener for single edit buttons
+      ui.logItemsContainer.querySelectorAll('.btn-edit-single-log').forEach(btn => {
+        btn.addEventListener('click', e => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-id');
+          const found = currentLogsList.find(x => x.id === id);
+          if (found) {
+            openEditLogModal(found);
+          }
+        });
+      });
+
       // Event listener for single delete buttons
       ui.logItemsContainer.querySelectorAll('.btn-delete-single-log').forEach(btn => {
         btn.addEventListener('click', e => {
@@ -4461,6 +4673,101 @@
         });
       });
     }
+
+    // Modal Edit Log Functions
+    function openEditLogModal(log) {
+      if (!log) return;
+      currentEditingLog = log;
+      ui.editLogId.value = log.id;
+      ui.editLogBadgeItem.textContent = log.item || '-';
+      ui.editLogBadgeProcess.textContent = log.process || '-';
+      ui.editLogNamepart.textContent = log.name_part || '-';
+      ui.editLogMenuText.textContent = `เมนู: ${log.menu || '-'}`;
+      ui.editLogEmployee.textContent = `โดย: ${log.employee_name || '-'}`;
+
+      ui.editLogGoodQty.value = Number(log.good_qty || 0);
+      ui.editLogNgQty.value = Number(log.ng_qty || 0);
+
+      // Format timestamp for datetime-local (YYYY-MM-DDTHH:mm)
+      if (log.timestamp) {
+        const dt = new Date(log.timestamp);
+        if (!isNaN(dt)) {
+          const pad = n => String(n).padStart(2, '0');
+          const localIso = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+          ui.editLogTimestamp.value = localIso;
+        } else {
+          ui.editLogTimestamp.value = '';
+        }
+      } else {
+        ui.editLogTimestamp.value = '';
+      }
+
+      updateEditLogPreview();
+      ui.modalEditLog.style.display = 'flex';
+    }
+
+    function closeEditLogModal() {
+      ui.modalEditLog.style.display = 'none';
+      currentEditingLog = null;
+    }
+
+    function updateEditLogPreview() {
+      if (!currentEditingLog) return;
+      const oldGood = Number(currentEditingLog.good_qty || 0);
+      const oldNg = Number(currentEditingLog.ng_qty || 0);
+      const newGood = Number(ui.editLogGoodQty.value || 0);
+      const newNg = Number(ui.editLogNgQty.value || 0);
+      const diffGood = newGood - oldGood;
+      const diffNg = newNg - oldNg;
+
+      const proc = String(currentEditingLog.process || '').trim();
+      const menu = String(currentEditingLog.menu || '').trim();
+      const isShip = (proc.toLowerCase() === 'ship' || menu === 'ส่งสินค้า');
+
+      let previewHtml = '';
+      if (isShip) {
+        const diffText = diffGood > 0 ? `ลดลง ${diffGood} ชิ้น` : diffGood < 0 ? `เพิ่มคืน ${Math.abs(diffGood)} ชิ้น` : 'ไม่เปลี่ยนแปลง';
+        previewHtml += `<div>• สต็อก Finished Goods จะ: <b>${diffText}</b></div>`;
+        previewHtml += `<div>• ยอดขายประจำวัน/สะสม จะคำนวณใหม่ตามยอดส่งใหม่ (${newGood} ชิ้น)</div>`;
+      } else {
+        const diffGoodText = diffGood > 0 ? `+${diffGood} ชิ้น` : diffGood < 0 ? `${diffGood} ชิ้น` : 'คงเดิม';
+        const diffNgText = diffNg > 0 ? `+${diffNg} ชิ้น` : diffNg < 0 ? `${diffNg} ชิ้น` : 'คงเดิม';
+        previewHtml += `<div>• สต็อก Process (${proc}) จะปรับ: <b class="text-success">${diffGoodText}</b></div>`;
+        previewHtml += `<div>• สต็อก NG จะปรับ: <b class="text-danger">${diffNgText}</b></div>`;
+        const diffTotal = diffGood + diffNg;
+        const diffTotalText = diffTotal > 0 ? `+${diffTotal} ชิ้น` : diffTotal < 0 ? `${diffTotal} ชิ้น` : 'คงเดิม';
+        previewHtml += `<div>• สต็อก Total จะปรับ: <b>${diffTotalText}</b></div>`;
+      }
+
+      ui.editLogPreviewText.innerHTML = previewHtml;
+    }
+
+    ui.editLogGoodQty.addEventListener('input', updateEditLogPreview);
+    ui.editLogNgQty.addEventListener('input', updateEditLogPreview);
+    ui.btnCloseEditLogModal.addEventListener('click', closeEditLogModal);
+    ui.btnCancelEditLog.addEventListener('click', closeEditLogModal);
+
+    ui.btnSaveEditLog.addEventListener('click', () => {
+      if (!currentEditingLog) return;
+      const logId = ui.editLogId.value;
+      const newGood = Number(ui.editLogGoodQty.value || 0);
+      const newNg = Number(ui.editLogNgQty.value || 0);
+      const newTimestamp = ui.editLogTimestamp.value ? new Date(ui.editLogTimestamp.value).toISOString() : new Date().toISOString();
+
+      showLoading(true, 'กำลังบันทึกการแก้ไขและอัปเดตสต็อก/ยอดขาย...');
+      google.script.run
+        .withSuccessHandler(res => {
+          showLoading(false);
+          closeEditLogModal();
+          showToast(res && res.message ? res.message : 'แก้ไขประวัติการผลิตเรียบร้อย', 'success', 3000);
+          loadProductionLogs();
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          alert('⚠️ ไม่สามารถแก้ไขได้:\n' + (err && err.message ? err.message : err));
+        })
+        .updateProductionLog(logId, newGood, newNg, newTimestamp);
+    });
 
     function updateSelectedLogsUI() {
       const count = state.selectedLogIds.size;
