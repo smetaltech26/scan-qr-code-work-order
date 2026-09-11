@@ -518,6 +518,7 @@ function doPost(e) {
 const AI_CONFIG = {
   // 1. ดึงคีย์จาก Script Properties เพื่อความปลอดภัย ไม่ให้คีย์หลุดไปบน GitHub
   GEMINI_API_KEY: PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'), 
+  SENDER_NAME: 'Daily Report Part MA',
   REPORT_EMAILS: [
     'pongsak@smetaltech.co.th',
     'therayut@smetaltech.co.th',
@@ -869,6 +870,7 @@ function sendToEmail(subject, message) {
 
     MailApp.sendEmail({
       to: AI_CONFIG.REPORT_EMAILS.join(','), 
+      name: AI_CONFIG.SENDER_NAME || 'Daily Report Part MA',
       subject: subject,
       htmlBody: htmlBody
     });
