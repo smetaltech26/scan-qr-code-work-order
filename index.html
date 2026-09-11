@@ -224,6 +224,7 @@
       width: 80%;
       height: 1px;
       background: linear-gradient(90deg, transparent, rgba(79, 110, 247, 0.2), transparent);
+      pointer-events: none !important;
     }
 
     h4, h5, h6, label { color: var(--text-strong); }
@@ -839,6 +840,7 @@
       border-radius: 50%;
       background: rgba(255, 255, 255, 0.28);
       transform: rotate(-20deg);
+      pointer-events: none !important;
     }
 
     h4,
@@ -1531,6 +1533,14 @@
     .btn-setting-gear:hover {
       transform: rotate(45deg) scale(1.1) !important;
       filter: saturate(1.15) !important;
+    }
+
+    #settings-back-btn {
+      position: relative !important;
+      z-index: 10 !important;
+      cursor: pointer !important;
+      touch-action: manipulation !important;
+      -webkit-tap-highlight-color: transparent !important;
     }
 
     .settings-tabs {
@@ -2230,7 +2240,7 @@
               <small class="text-muted">Admin Control Panel</small>
             </div>
           </div>
-          <button id="settings-back-btn" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:36px; padding:5px 14px; border-radius:14px; font-size:0.84rem;">
+          <button id="settings-back-btn" class="btn-neo btn-neo-sm neo-primary" style="width:auto; min-height:36px; padding:5px 14px; border-radius:14px; font-size:0.84rem; position:relative; z-index:10; cursor:pointer; touch-action:manipulation;">
             <i class="bi bi-arrow-left"></i> กลับหน้าแรก
           </button>
         </div>
@@ -2929,9 +2939,55 @@
     // =================================================================
     // Settings API Functions
     // =================================================================
+    runner.getAdminPassword = async function() {
+      try {
+        const { data, error } = await sb.from('inventory')
+          .select('name_part')
+          .eq('item', '__CONFIG_ADMIN_PASSWORD__')
+          .maybeSingle();
+        if (error) throw error;
+        const pwd = (data && data.name_part) ? String(data.name_part).trim() : '1234';
+        _success(pwd);
+      } catch (err) {
+        _success('1234');
+      }
+    };
+
+    runner.saveAdminPassword = async function(newPwd) {
+      try {
+        const pwd = String(newPwd || '').trim();
+        if (!pwd) throw new Error('Password cannot be empty');
+        const { data: existing } = await sb.from('inventory')
+          .select('id')
+          .eq('item', '__CONFIG_ADMIN_PASSWORD__')
+          .maybeSingle();
+        if (existing) {
+          const { error } = await sb.from('inventory')
+            .update({ name_part: pwd, updated_at: new Date().toISOString() })
+            .eq('id', existing.id);
+          if (error) throw error;
+        } else {
+          const { error } = await sb.from('inventory')
+            .insert([{
+              item: '__CONFIG_ADMIN_PASSWORD__',
+              name_part: pwd,
+              model: 'SYSTEM_CONFIG',
+              drawing: 'SYSTEM_CONFIG',
+              receiving: 0, cutting: 0, milling: 0, cnc: 0, grinding: 0, finished_goods: 0, ng: 0, total: 0, price: 0, rm_price: 0
+            }]);
+          if (error) throw error;
+        }
+        _success(true);
+      } catch (err) { _failure(err); }
+    };
+
     runner.getAllInventoryItems = async function() {
       try {
-        const { data, error } = await sb.from('inventory').select('*').order('name_part', { ascending: true }).limit(2000);
+        const { data, error } = await sb.from('inventory')
+          .select('*')
+          .neq('model', 'SYSTEM_CONFIG')
+          .order('name_part', { ascending: true })
+          .limit(2000);
         if (error) throw error;
         _success(data || []);
       } catch (err) { _failure(err); }
@@ -2940,7 +2996,7 @@
     runner.searchInventoryAll = async function(query) {
       try {
         const q = String(query || '').trim();
-        let queryBuilder = sb.from('inventory').select('*');
+        let queryBuilder = sb.from('inventory').select('*').neq('model', 'SYSTEM_CONFIG');
         if (q) {
           queryBuilder = queryBuilder.or(`item.ilike.%${q}%,name_part.ilike.%${q}%`);
         }
@@ -3943,11 +3999,27 @@
       return inMemoryAdminPassword || '1234';
     };
     const setStoredPassword = (newPwd) => {
-      inMemoryAdminPassword = newPwd.trim();
+      inMemoryAdminPassword = String(newPwd || '').trim();
       try {
-        localStorage.setItem(ADMIN_PASSWORD_KEY, newPwd.trim());
+        localStorage.setItem(ADMIN_PASSWORD_KEY, inMemoryAdminPassword);
       } catch (e) {}
     };
+
+    const syncAdminPasswordFromCloud = () => {
+      try {
+        google.script.run
+          .withSuccessHandler(pwd => {
+            if (pwd && typeof pwd === 'string') {
+              setStoredPassword(pwd);
+            }
+          })
+          .withFailureHandler(() => {})
+          .getAdminPassword();
+      } catch (e) {}
+    };
+
+    // Auto-sync password from cloud on page load
+    syncAdminPasswordFromCloud();
 
     ui.btnOpenSettings.addEventListener('click', async () => {
       await stopScanner();
@@ -3955,6 +4027,7 @@
       ui.pwdErrorMsg.style.display = 'none';
       ui.modalPassword.style.display = 'flex';
       ui.adminPasswordInput.focus();
+      syncAdminPasswordFromCloud();
     });
 
     const closePwdModal = () => { ui.modalPassword.style.display = 'none'; };
@@ -3963,14 +4036,39 @@
 
     function verifyPasswordAndOpenSettings() {
       const entered = (ui.adminPasswordInput.value || '').trim();
-      const currentPwd = getStoredPassword();
-      if (entered && (entered === currentPwd || entered === 'smt2026')) {
-        closePwdModal();
-        enterSettingsPage();
-      } else {
+      if (!entered) {
         ui.pwdErrorMsg.style.display = 'block';
         ui.adminPasswordInput.focus();
+        return;
       }
+      const currentPwd = getStoredPassword();
+      if (entered === currentPwd || entered === 'smt2026') {
+        closePwdModal();
+        enterSettingsPage();
+        return;
+      }
+
+      // Check live against cloud database in case another device changed the password
+      showLoading(true);
+      google.script.run
+        .withSuccessHandler(cloudPwd => {
+          showLoading(false);
+          const cp = (cloudPwd && typeof cloudPwd === 'string') ? cloudPwd.trim() : '1234';
+          setStoredPassword(cp);
+          if (entered === cp || entered === 'smt2026') {
+            closePwdModal();
+            enterSettingsPage();
+          } else {
+            ui.pwdErrorMsg.style.display = 'block';
+            ui.adminPasswordInput.focus();
+          }
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          ui.pwdErrorMsg.style.display = 'block';
+          ui.adminPasswordInput.focus();
+        })
+        .getAdminPassword();
     }
 
     ui.btnSubmitPwd.addEventListener('click', verifyPasswordAndOpenSettings);
@@ -3999,9 +4097,15 @@
       loadRecentDailySummaries();
     }
 
-    ui.settingsBackBtn.addEventListener('click', async () => {
+    const handleSettingsBack = async (e) => {
+      if (e) {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+      }
       await resetAll();
-    });
+    };
+    ui.settingsBackBtn.addEventListener('click', handleSettingsBack);
+    ui.settingsBackBtn.addEventListener('touchend', handleSettingsBack);
 
     // Sub-tab Navigation
     document.querySelectorAll('.settings-tab-btn').forEach(btn => {
@@ -4960,14 +5064,27 @@
         return;
       }
 
-      setStoredPassword(newP);
-      ui.pwdCurrInput.value = '';
-      ui.pwdNewInput.value = '';
-      ui.pwdConfirmInput.value = '';
-      ui.changePwdMsg.className = 'text-success small font-weight-bold mb-3';
-      ui.changePwdMsg.textContent = '✅ เปลี่ยนรหัสผ่าน Setting สำเร็จแล้ว!';
-      ui.changePwdMsg.style.display = 'block';
-      showToast('เปลี่ยนรหัสผ่าน Setting สำเร็จแล้ว', 'success');
+      showLoading(true, 'กำลังบันทึกรหัสผ่านใหม่...');
+      google.script.run
+        .withSuccessHandler(() => {
+          showLoading(false);
+          setStoredPassword(newP);
+          ui.pwdCurrInput.value = '';
+          ui.pwdNewInput.value = '';
+          ui.pwdConfirmInput.value = '';
+          ui.changePwdMsg.className = 'text-success small font-weight-bold mb-3';
+          ui.changePwdMsg.textContent = '✅ เปลี่ยนรหัสผ่าน Setting สำเร็จแล้ว (อัปเดตทุกเครื่อง)!';
+          ui.changePwdMsg.style.display = 'block';
+          showToast('เปลี่ยนรหัสผ่าน Setting สำเร็จทุกเครื่องแล้ว', 'success');
+        })
+        .withFailureHandler(err => {
+          showLoading(false);
+          ui.changePwdMsg.className = 'text-danger small font-weight-bold mb-3';
+          ui.changePwdMsg.textContent = '❌ บันทึกรหัสผ่านล้มเหลว: ' + (err.message || err);
+          ui.changePwdMsg.style.display = 'block';
+          showToast('บันทึกรหัสผ่านล้มเหลว', 'error');
+        })
+        .saveAdminPassword(newP);
     });
 
     // ===== Workflow Scan & Reset =====
@@ -5068,8 +5185,12 @@
 
     async function stopScanner(){
       try{
-        if(state.html5Qr && state.html5Qr.isScanning){ await state.html5Qr.stop(); }
-        if(state.html5Qr){ await state.html5Qr.clear(); }
+        if(state.html5Qr && state.html5Qr.isScanning){
+          await state.html5Qr.stop().catch(()=>{});
+        }
+        if(state.html5Qr){
+          await state.html5Qr.clear().catch(()=>{});
+        }
         const v = document.querySelector('#reader video');
         if(v && v.srcObject){
           try{ v.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
@@ -5287,19 +5408,27 @@
     }
 
     async function resetAll(){
-      await resetOnlyState();
-      state.operationMode=null;
-      ui.startWrap.style.display='none';
-      ui.shipSection && (ui.shipSection.style.display='none');
-      ui.stockSection && (ui.stockSection.style.display='none');
-      ui.reportSection && (ui.reportSection.style.display='none');
-      ui.settingsSection && (ui.settingsSection.style.display='none');
-      if (ui.allPartsTableContainer) ui.allPartsTableContainer.style.display='none';
+      // 1. Switch UI immediately for instant feedback
+      if (ui.settingsSection) ui.settingsSection.style.display = 'none';
+      if (ui.startWrap) ui.startWrap.style.display = 'none';
+      if (ui.shipSection) ui.shipSection.style.display = 'none';
+      if (ui.stockSection) ui.stockSection.style.display = 'none';
+      if (ui.reportSection) ui.reportSection.style.display = 'none';
+      if (ui.startItemSection) ui.startItemSection.style.display = 'none';
+      if (ui.allPartsTableContainer) ui.allPartsTableContainer.style.display = 'none';
       const appCont = document.querySelector('.app-container');
       if (appCont) appCont.classList.remove('wide-mode');
-      ui.menuSection.style.display='grid';
-      ui.subtitle.textContent='เลือกเมนูเพื่อเริ่มทำงาน';
+      if (ui.menuSection) ui.menuSection.style.display = 'grid';
+      if (ui.subtitle) ui.subtitle.textContent = 'เลือกเมนูเพื่อเริ่มทำงาน';
       window.scrollTo(0, 0);
+
+      // 2. Safely clean up state & scanner
+      state.operationMode = null;
+      try {
+        await resetOnlyState();
+      } catch (err) {
+        console.warn('Cleanup error during resetAll:', err);
+      }
     }
 
     async function resetForProcessScan(){
