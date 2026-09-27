@@ -1999,23 +1999,34 @@
   }
   .btn-neo:focus:not(:focus-visible), .settings-tab-btn:focus:not(:focus-visible) { outline: none; }
 
+  /* Color Edge: homepage menu appearance only. */
   .menu-wrap { gap: 14px; }
+  #menu-start { --edge-color: #315dcc; --edge-stroke: #c9d8f9; --edge-dark: #234cae; --icon-from: #3b82f6; --icon-to: #2563eb; --icon-ink: #fff; }
+  #menu-finish { --edge-color: #237655; --edge-stroke: #bfdfce; --edge-dark: #185b41; --icon-from: #34d399; --icon-to: #10b981; --icon-ink: #064e3b; }
+  #menu-ship { --edge-color: #96601c; --edge-stroke: #eed6b0; --edge-dark: #7c4c12; --icon-from: #ffab40; --icon-to: #ff7b22; --icon-ink: #552400; }
+  #menu-stock { --edge-color: #526784; --edge-stroke: #cad5e5; --edge-dark: #3d506a; --icon-from: #ffe36a; --icon-to: #facc15; --icon-ink: #624900; }
+  #menu-report { --edge-color: #3a58b6; --edge-stroke: #cdd7f8; --edge-dark: #2c418f; --icon-from: #a366ff; --icon-to: #7c3aed; --icon-ink: #fff; }
+  #menu-overview { --edge-color: #a0477b; --edge-stroke: #e9c8da; --edge-dark: #813660; --icon-from: #f65ca6; --icon-to: #e62c87; --icon-ink: #fff; }
   .menu-wrap .btn-neo {
-    min-height: 104px; padding: 18px; gap: 14px; flex-direction: row;
+    position: relative; min-height: 104px; padding: 18px; gap: 14px; flex-direction: row;
     justify-content: flex-start; text-align: left; font-weight: 600; font-size: 1.2rem; line-height: 1.45;
-    color: var(--text-strong); background: #fff; border: 1px solid var(--line);
-    border-radius: 16px; box-shadow: none;
+    color: var(--text-strong); background: #fff; border: 1px solid var(--edge-stroke);
+    border-radius: 22px; box-shadow: 0 5px 14px rgba(32,57,96,.03);
   }
-  .menu-wrap .btn-neo:hover { border-color: var(--primary-2); box-shadow: var(--shadow-soft); color: var(--text-strong); }
+  .menu-wrap .btn-neo::before {
+    content: ''; position: absolute; top: 24px; bottom: 24px; left: 0; width: 4px;
+    background: var(--edge-color); border-radius: 0 5px 5px 0; pointer-events: none;
+  }
+  .menu-wrap .btn-neo:hover { border-color: var(--edge-color); box-shadow: var(--shadow-soft); color: var(--text-strong); }
+  .menu-wrap .btn-neo:active { transform: translateY(1px) scale(.985); box-shadow: inset 0 3px 9px rgba(22,38,65,.12); }
+  .menu-wrap .btn-neo:focus-visible { outline-color: var(--edge-color); }
   .menu-wrap .btn-neo > i {
-    flex: 0 0 46px; width: 46px; height: 46px; border: 0; border-radius: 12px;
-    background: var(--info-bg); color: var(--primary-2); box-shadow: none;
+    flex: 0 0 46px; width: 46px; height: 46px; border: 0; border-radius: 14px;
+    background: linear-gradient(140deg, var(--icon-from), var(--icon-to)); color: var(--icon-ink);
+    box-shadow: 0 7px 13px rgba(32,57,96,.18);
+    box-shadow: 0 7px 13px color-mix(in srgb, var(--icon-to) 23%, transparent);
     transform: none; font-size: 1.4rem;
   }
-  #menu-finish > i { background: var(--ok-bg); color: var(--success-2); }
-  #menu-ship > i { background: var(--warn-bg); color: var(--warn-2); }
-  #menu-stock > i { background: #f0f3f7; color: var(--gray-2); }
-  #menu-overview > i { background: #faeff5; color: var(--pink-2); }
 
   .form-control {
     background: #fff; color: var(--text-strong); border: 1px solid var(--line);
@@ -2154,8 +2165,8 @@
     .header h1 img { width: 42px !important; }
     .main-card { padding: 16px; border-radius: 20px; }
     .menu-wrap { gap: 12px; grid-template-rows: repeat(3, minmax(100px, 1fr)); }
-    .menu-wrap .btn-neo { flex-direction: column; justify-content: center; text-align: center; min-height: 100px; padding: 12px 6px; gap: 10px; border-radius: 16px; font-size: clamp(1.0625rem, 4.6vw, 1.1875rem); }
-    .menu-wrap .btn-neo > i { flex-basis: 46px; width: 46px; height: 46px; border-radius: 12px; }
+    .menu-wrap .btn-neo { flex-direction: column; justify-content: center; text-align: center; min-height: 100px; padding: 12px 6px; gap: 10px; border-radius: 22px; font-size: clamp(1.0625rem, 4.6vw, 1.1875rem); }
+    .menu-wrap .btn-neo > i { flex-basis: 46px; width: 46px; height: 46px; border-radius: 14px; }
     .settings-tabs { gap: 5px; }
     .settings-tab-btn { padding: 8px 3px; font-size: .75rem; }
     #result-card, #review-section, #ship-result, #ship-review, #stock-result, #report-head { padding: 14px; }
@@ -2172,7 +2183,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .btn-neo, .report-log, .settings-tab-btn { transition: none; }
-    .btn-neo:hover { transform: none; }
+    .btn-neo:hover, .menu-wrap .btn-neo:active { transform: none; }
   }
   @media (forced-colors: active) {
     .main-card, .menu-wrap .btn-neo, .form-control, .smt-modal-panel { border: 1px solid CanvasText !important; }
