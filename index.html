@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
     /* =========================================
@@ -2080,7 +2081,39 @@
   }
   .report-log:hover { transform: none; box-shadow: var(--shadow-soft); }
   .log-item-card.selected { background: var(--info-bg); border-color: var(--primary-2); }
+  .log-item-row.selected td { background: var(--info-bg) !important; }
   .custom-checkbox { accent-color: var(--primary-2); }
+  .log-view-toggle { background: #e2e8f0; padding: 3px; border-radius: 12px; gap: 3px; }
+  .btn-log-view {
+    border: none; background: transparent; color: var(--muted); font-size: 0.8rem;
+    font-weight: 500; padding: 4px 10px; border-radius: 9px; display: inline-flex;
+    align-items: center; gap: 5px; cursor: pointer; transition: all 0.2s ease; line-height: 1.2;
+  }
+  .btn-log-view:hover { color: var(--primary-3); }
+  .btn-log-view.active {
+    background: #ffffff; color: var(--primary-2); font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  }
+  .log-table-wrapper {
+    width: 100%; max-height: 480px; overflow-y: auto; overflow-x: auto;
+    border: 1px solid var(--line); border-radius: 14px; background: #fff;
+    box-shadow: var(--shadow-soft); -webkit-overflow-scrolling: touch;
+  }
+  .log-excel-table {
+    width: 100%; border-collapse: separate; border-spacing: 0;
+    font-family: 'Kanit', -apple-system, sans-serif; font-size: 0.84rem; white-space: nowrap;
+  }
+  .log-excel-table thead th {
+    position: sticky; top: 0; z-index: 10; background: var(--info-bg) !important;
+    color: var(--primary-3) !important; border: 1px solid var(--line) !important;
+    font-weight: 600 !important; padding: 8px 10px; text-align: center;
+  }
+  .log-excel-table tbody td {
+    padding: 7px 10px; border: 1px solid var(--line); vertical-align: middle;
+    background: #fff; transition: background 0.15s ease;
+  }
+  .log-excel-table tbody tr:hover td { background: #f8fafc; }
+  .log-excel-table tbody tr.selected td { background: var(--info-bg) !important; }
   .settings-tabs { border-bottom: 1px solid var(--line); gap: 8px; }
   .settings-tab-btn { min-height: 58px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 12px; color: var(--muted); box-shadow: none; }
   .settings-tab-btn.active { background: var(--primary-2); color: #fff; border-color: var(--primary-2); box-shadow: none; }
@@ -2176,10 +2209,8 @@
   }
   @media (max-width: 400px) {
     #tab-daily-summary .input-group > .form-control { flex: 1 1 100%; width: 100%; border-radius: 12px !important; }
-    #tab-daily-summary .input-group-append { width: 100%; margin: 8px 0 0; }
     #tab-daily-summary .input-group-append > .btn-neo { border-radius: 12px !important; min-height: 44px; }
-    #tab-prod-logs > .form-row > .col-7, #tab-prod-logs > .form-row > .col-5 { flex: 0 0 100%; max-width: 100%; }
-    #tab-prod-logs > .form-row > .col-5 { margin-top: 8px; }
+    #tab-prod-logs .form-row > [class*="col-"] { margin-bottom: 6px; }
   }
   @media (prefers-reduced-motion: reduce) {
     .btn-neo, .report-log, .settings-tab-btn { transition: none; }
@@ -2676,7 +2707,15 @@
         <div id="tab-prod-logs" class="settings-tab-pane" style="display:none;">
           <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <h6 class="font-weight-bold mb-0" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-clock-history"></i> ประวัติการผลิต (Production Logs)</h6>
-            <div class="d-flex" style="gap:6px;">
+            <div class="d-flex align-items-center flex-wrap" style="gap:6px;">
+              <div class="log-view-toggle d-inline-flex">
+                <button type="button" id="btn-view-cards" class="btn-log-view active" title="แสดงแบบการ์ด">
+                  <i class="bi bi-view-stacked"></i> การ์ด
+                </button>
+                <button type="button" id="btn-view-table" class="btn-log-view" title="แสดงแบบตาราง">
+                  <i class="bi bi-table"></i> ตาราง
+                </button>
+              </div>
               <button id="btn-clear-log-filters" class="btn-neo btn-neo-sm btn-neo-cancel" style="width:auto; min-height:34px; padding:4px 10px; font-size:0.8rem; border-radius:12px;">
                 <i class="bi bi-eraser-fill"></i> ล้าง
               </button>
@@ -2686,27 +2725,53 @@
             </div>
           </div>
 
-          <div class="form-row mb-3">
-            <div class="col-7">
-              <input id="filter-log-keyword" type="text" class="form-control" style="min-height:44px; font-size:0.9rem;" placeholder="ค้นหา Item, Process, พนักงาน...">
+          <div class="form-row mb-2">
+            <div class="col-12 col-md-4 mb-2 mb-md-0">
+              <input id="filter-log-keyword" type="text" class="form-control" style="min-height:42px; font-size:0.88rem;" placeholder="ค้นหา Item, Process, พนักงาน...">
             </div>
-            <div class="col-5">
-              <input id="filter-log-date" type="date" class="form-control" style="min-height:44px; font-size:0.9rem;">
+            <div class="col-6 col-md-3 mb-2 mb-md-0">
+              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+                <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.75rem;"><i class="bi bi-calendar3"></i> เริ่ม:</span>
+                <input id="filter-log-start-date" type="date" class="form-control border-0 p-0" style="min-height:36px; font-size:0.84rem; background:transparent; box-shadow:none;" title="ค้นหาตั้งแต่วันที่">
+              </div>
+            </div>
+            <div class="col-6 col-md-3 mb-2 mb-md-0">
+              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+                <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.75rem;"><i class="bi bi-calendar-check"></i> ถึง:</span>
+                <input id="filter-log-end-date" type="date" class="form-control border-0 p-0" style="min-height:36px; font-size:0.84rem; background:transparent; box-shadow:none;" title="ถึงวันที่">
+              </div>
+            </div>
+            <div class="col-12 col-md-2 mb-2 mb-md-0">
+              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+                <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.72rem;"><i class="bi bi-list-ol"></i> ดึง:</span>
+                <select id="filter-log-limit" class="form-control border-0 p-0" style="min-height:36px; font-size:0.82rem; background:transparent; box-shadow:none; cursor:pointer;" title="จำนวนรายการสูงสุดที่ต้องการดึง">
+                  <option value="250" selected>250 รายการ</option>
+                  <option value="500">500 รายการ</option>
+                  <option value="1000">1,000 รายการ</option>
+                  <option value="all">ทั้งหมด (All)</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <!-- แถบควบคุม Select all & Bulk delete -->
-          <div class="d-flex align-items-center justify-content-between p-2 mb-2" style="background:#f1f5f9; border-radius:12px;">
+          <!-- แถบควบคุม Select all & Bulk delete & Export Excel -->
+          <div class="d-flex align-items-center justify-content-between p-2 mb-2 flex-wrap" style="background:#f1f5f9; border-radius:12px; gap:8px;">
             <div class="d-flex align-items-center">
               <input id="chk-log-select-all" type="checkbox" class="custom-checkbox mr-2">
               <label for="chk-log-select-all" class="mb-0 font-weight-bold small" style="cursor:pointer;">เลือกทั้งหมด</label>
+              <span id="log-items-total-badge" class="badge badge-light ml-2" style="border:1px solid var(--line); font-size:0.75rem; color:var(--muted); font-weight:normal;">0 รายการ</span>
             </div>
-            <button id="btn-delete-selected-logs" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--err); border-color:#ffd1dc; width:auto; padding:5px 12px; font-size:0.84rem; display:none;">
-              <i class="bi bi-trash3-fill"></i> ลบที่เลือก (<span id="selected-logs-count">0</span>)
-            </button>
+            <div class="d-flex align-items-center flex-wrap" style="gap:6px;">
+              <button id="btn-export-logs-excel" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--success-3); border-color:#86efac; background:#f0fdf4; width:auto; padding:5px 12px; font-size:0.84rem;" title="ส่งออกข้อมูลเป็นไฟล์ Excel">
+                <i class="bi bi-file-earmark-excel-fill text-success mr-1"></i> Export Excel
+              </button>
+              <button id="btn-delete-selected-logs" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--err); border-color:#ffd1dc; width:auto; padding:5px 12px; font-size:0.84rem; display:none;">
+                <i class="bi bi-trash3-fill"></i> ลบที่เลือก (<span id="selected-logs-count">0</span>)
+              </button>
+            </div>
           </div>
 
-          <div id="log-items-container" style="max-height:450px; overflow-y:auto; overscroll-behavior:contain;">
+          <div id="log-items-container" style="max-height:480px; overflow-y:auto; overscroll-behavior:contain;">
             <div class="text-center py-4 text-muted"><i class="bi bi-hourglass-split"></i> กำลังโหลดรายการ Logs...</div>
           </div>
         </div>
@@ -3293,31 +3358,67 @@
 
     runner.getProductionLogsFiltered = async function(params) {
       try {
-        let query = sb.from('production_logs').select('*');
-        if (params && params.keyword) {
-          const kw = String(params.keyword).trim();
-          query = query.or(`item.ilike.%${kw}%,name_part.ilike.%${kw}%,process.ilike.%${kw}%,employee_name.ilike.%${kw}%`);
+        const kw = (params && params.keyword) ? String(params.keyword).trim() : '';
+        let sDate = (params && (params.startDate || params.date)) ? String(params.startDate || params.date).trim() : '';
+        let eDate = (params && (params.endDate || params.date)) ? String(params.endDate || params.date).trim() : '';
+
+        // If both dates exist and startDate > endDate, swap them safely
+        if (sDate && eDate && sDate > eDate) {
+          const tmp = sDate;
+          sDate = eDate;
+          eDate = tmp;
         }
-        if (params && params.date) {
-          const start = `${params.date}T00:00:00`;
-          const nextD = new Date(params.date);
-          nextD.setDate(nextD.getDate() + 1);
-          const end = nextD.toISOString().split('T')[0] + 'T00:00:00';
-          query = query.gte('timestamp', start).lt('timestamp', end);
+
+        // Determine maxLimit (default: 250)
+        let maxLimit = 250;
+        if (params && params.limit) {
+          if (params.limit === 'all') maxLimit = 10000;
+          else if (!isNaN(Number(params.limit))) maxLimit = Number(params.limit);
         }
-        const limit = (params && params.limit) || 80;
-        query = query.order('timestamp', { ascending: false }).limit(limit);
-        const { data, error } = await query;
-        if (error) throw error;
-        _success(data || []);
+
+        let allData = [];
+        let from = 0;
+        const pageSize = 1000;
+
+        while (allData.length < maxLimit) {
+          let query = sb.from('production_logs').select('*');
+          if (kw) {
+            query = query.or(`item.ilike.%${kw}%,name_part.ilike.%${kw}%,process.ilike.%${kw}%,employee_name.ilike.%${kw}%`);
+          }
+          if (sDate) {
+            query = query.gte('timestamp', `${sDate}T00:00:00`);
+          }
+          if (eDate) {
+            const nextD = new Date(eDate);
+            nextD.setDate(nextD.getDate() + 1);
+            const endStr = nextD.toISOString().split('T')[0] + 'T00:00:00';
+            query = query.lt('timestamp', endStr);
+          }
+
+          const currentFetchSize = Math.min(pageSize, maxLimit - allData.length);
+          query = query.order('timestamp', { ascending: false }).range(from, from + currentFetchSize - 1);
+
+          const { data, error } = await query;
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          allData.push(...data);
+          if (data.length < currentFetchSize) break;
+          from += data.length;
+        }
+
+        _success(allData);
       } catch (err) { _failure(err); }
     };
 
     runner.deleteProductionLogsByIds = async function(ids) {
       try {
         if (!Array.isArray(ids) || ids.length === 0) throw new Error('ไม่มีรายการที่เลือก');
-        const { error } = await sb.from('production_logs').delete().in('id', ids);
-        if (error) throw error;
+        const chunkSize = 100;
+        for (let i = 0; i < ids.length; i += chunkSize) {
+          const chunk = ids.slice(i, i + chunkSize);
+          const { error } = await sb.from('production_logs').delete().in('id', chunk);
+          if (error) throw error;
+        }
         _success({ ok: true, count: ids.length, message: `ลบประวัติการผลิต ${ids.length} รายการเรียบร้อยแล้ว` });
       } catch (err) { _failure(err); }
     };
@@ -3679,8 +3780,15 @@
       btnRefreshLogs: $('#btn-refresh-logs'),
       btnClearLogFilters: $('#btn-clear-log-filters'),
       filterLogKeyword: $('#filter-log-keyword'),
-      filterLogDate: $('#filter-log-date'),
+      filterLogStartDate: $('#filter-log-start-date'),
+      filterLogEndDate: $('#filter-log-end-date'),
+      filterLogDate: $('#filter-log-start-date') || $('#filter-log-date'),
+      filterLogLimit: $('#filter-log-limit'),
+      btnViewCards: $('#btn-view-cards'),
+      btnViewTable: $('#btn-view-table'),
+      logItemsTotalBadge: $('#log-items-total-badge'),
       chkLogSelectAll: $('#chk-log-select-all'),
+      btnExportLogsExcel: $('#btn-export-logs-excel'),
       btnDeleteSelectedLogs: $('#btn-delete-selected-logs'),
       selectedLogsCount: $('#selected-logs-count'),
       logItemsContainer: $('#log-items-container'),
@@ -3746,6 +3854,7 @@
       tableSortAsc: true,
       columnFilters: {},
       selectedLogIds: new Set(),
+      logViewMode: (function() { try { return localStorage.getItem('smt_log_view_mode') || 'cards'; } catch(e) { return 'cards'; } })(),
       confirmCallback: null
     };
 
@@ -4361,7 +4470,25 @@
       });
 
       if (tabId === 'tab-prod-logs') {
+        if (state.logViewMode === 'table') {
+          if (ui.btnViewTable) ui.btnViewTable.classList.add('active');
+          if (ui.btnViewCards) ui.btnViewCards.classList.remove('active');
+          const appCont = document.querySelector('.app-container');
+          if (appCont && window.innerWidth >= 992) appCont.classList.add('wide-mode');
+        } else {
+          if (ui.btnViewCards) ui.btnViewCards.classList.add('active');
+          if (ui.btnViewTable) ui.btnViewTable.classList.remove('active');
+          if (!ui.allPartsTableContainer || ui.allPartsTableContainer.style.display === 'none') {
+            const appCont = document.querySelector('.app-container');
+            if (appCont) appCont.classList.remove('wide-mode');
+          }
+        }
         loadProductionLogs();
+      } else {
+        if (!ui.allPartsTableContainer || ui.allPartsTableContainer.style.display === 'none') {
+          const appCont = document.querySelector('.app-container');
+          if (appCont) appCont.classList.remove('wide-mode');
+        }
       }
     }
 
@@ -4910,11 +5037,13 @@
     // Tab 2: Production Logs Management
     // -------------------------------------------------------------
     function loadProductionLogs() {
-      const keyword = ui.filterLogKeyword.value.trim();
-      const date = ui.filterLogDate.value;
+      const keyword = ui.filterLogKeyword ? ui.filterLogKeyword.value.trim() : '';
+      const startDate = ui.filterLogStartDate ? ui.filterLogStartDate.value : (ui.filterLogDate ? ui.filterLogDate.value : '');
+      const endDate = ui.filterLogEndDate ? ui.filterLogEndDate.value : '';
+      const limit = ui.filterLogLimit ? ui.filterLogLimit.value : '250';
       state.selectedLogIds.clear();
       updateSelectedLogsUI();
-      ui.chkLogSelectAll.checked = false;
+      if (ui.chkLogSelectAll) ui.chkLogSelectAll.checked = false;
 
       ui.logItemsContainer.innerHTML = '<div class="text-center py-4 text-muted"><i class="bi bi-hourglass-split"></i> กำลังโหลดรายการ Logs...</div>';
 
@@ -4925,18 +5054,53 @@
         .withFailureHandler(err => {
           ui.logItemsContainer.innerHTML = `<div class="alert alert-danger text-center">เกิดข้อผิดพลาด: ${err.message}</div>`;
         })
-        .getProductionLogsFiltered({ keyword, date, limit: 80 });
+        .getProductionLogsFiltered({ keyword, startDate, endDate, date: startDate, limit });
     }
 
     let currentLogsList = [];
     let currentEditingLog = null;
 
+    function setLogViewMode(mode) {
+      state.logViewMode = mode;
+      try { localStorage.setItem('smt_log_view_mode', mode); } catch (e) {}
+      if (ui.btnViewCards && ui.btnViewTable) {
+        if (mode === 'table') {
+          ui.btnViewTable.classList.add('active');
+          ui.btnViewCards.classList.remove('active');
+          const appCont = document.querySelector('.app-container');
+          if (appCont && window.innerWidth >= 992) appCont.classList.add('wide-mode');
+        } else {
+          ui.btnViewCards.classList.add('active');
+          ui.btnViewTable.classList.remove('active');
+          if (!ui.allPartsTableContainer || ui.allPartsTableContainer.style.display === 'none') {
+            const appCont = document.querySelector('.app-container');
+            if (appCont) appCont.classList.remove('wide-mode');
+          }
+        }
+      }
+      renderLogsList(currentLogsList);
+    }
+
     function renderLogsList(logs) {
       currentLogsList = logs || [];
+      if (ui.logItemsTotalBadge) {
+        ui.logItemsTotalBadge.textContent = `${currentLogsList.length} รายการ`;
+      }
       if (!logs || logs.length === 0) {
-        ui.logItemsContainer.innerHTML = '<div class="p-4 text-center text-muted">ไม่พบประวัติการผลิตตามเงื่อนไข</div>';
+        ui.logItemsContainer.innerHTML = '<div class="p-4 text-center text-muted"><i class="bi bi-inbox" style="font-size:1.5rem; display:block; margin-bottom:6px;"></i>ไม่พบประวัติการผลิตตามเงื่อนไข</div>';
         return;
       }
+
+      if (state.logViewMode === 'table') {
+        renderLogsTableView(logs);
+      } else {
+        renderLogsCardView(logs);
+      }
+
+      bindLogItemsEvents();
+    }
+
+    function renderLogsCardView(logs) {
       let html = '';
       logs.forEach(l => {
         let timeStr = '-';
@@ -4944,13 +5108,14 @@
           const dt = new Date(l.timestamp);
           if (!isNaN(dt)) timeStr = dt.toLocaleString('th-TH');
         }
+        const isSelected = state.selectedLogIds.has(String(l.id));
         html += `
-          <div class="log-item-card" data-id="${l.id}">
+          <div class="log-item-card ${isSelected ? 'selected' : ''}" data-id="${l.id}">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="d-flex align-items-center">
-                <input type="checkbox" class="custom-checkbox log-chk mr-2" data-id="${l.id}">
-                <b class="text-primary">${l.item}</b>
-                <span class="badge badge-secondary ml-2">${l.process}</span>
+                <input type="checkbox" class="custom-checkbox log-chk mr-2" data-id="${l.id}" ${isSelected ? 'checked' : ''}>
+                <b class="text-primary">${l.item || '-'}</b>
+                <span class="badge badge-secondary ml-2">${l.process || '-'}</span>
               </div>
               <div class="d-flex align-items-center" style="gap:6px;">
                 <button class="btn btn-sm btn-outline-primary btn-edit-single-log" data-id="${l.id}" title="แก้ไขรายการนี้" style="padding:2px 8px; border-radius:8px; font-size:0.75rem; font-weight:600;">
@@ -4972,36 +5137,135 @@
           </div>`;
       });
       ui.logItemsContainer.innerHTML = html;
+    }
 
-      // Event listener for individual checkboxes
+    function renderLogsTableView(logs) {
+      let rowsHtml = '';
+      logs.forEach(l => {
+        let timeStr = '-';
+        if (l.timestamp) {
+          const dt = new Date(l.timestamp);
+          if (!isNaN(dt)) timeStr = dt.toLocaleString('th-TH');
+        }
+        const isSelected = state.selectedLogIds.has(String(l.id));
+
+        const m = String(l.menu || '').trim();
+        let menuBadge = `<span class="badge badge-secondary" style="font-size:0.75rem; font-weight:normal;">${m || '-'}</span>`;
+        if (m === 'เริ่มการทำงาน') {
+          menuBadge = `<span class="badge badge-info" style="font-size:0.75rem; font-weight:normal; background:#0ea5e9; color:#fff;">เริ่มงาน</span>`;
+        } else if (m === 'เสร็จการทำงาน') {
+          menuBadge = `<span class="badge badge-success" style="font-size:0.75rem; font-weight:normal; background:#10b981; color:#fff;">เสร็จงาน</span>`;
+        } else if (m === 'ส่งสินค้า') {
+          menuBadge = `<span class="badge badge-warning" style="font-size:0.75rem; font-weight:normal; background:#f59e0b; color:#fff;">ส่งสินค้า</span>`;
+        }
+
+        const goodQty = Number(l.good_qty || 0);
+        const ngQty = Number(l.ng_qty || 0);
+
+        rowsHtml += `
+          <tr class="log-item-row ${isSelected ? 'selected' : ''}" data-id="${l.id}">
+            <td class="text-center align-middle" style="width:36px;">
+              <input type="checkbox" class="custom-checkbox log-chk" data-id="${l.id}" ${isSelected ? 'checked' : ''} style="width:17px; height:17px;">
+            </td>
+            <td class="text-center align-middle small text-muted" style="white-space:nowrap;">
+              <i class="bi bi-clock mr-1"></i>${timeStr}
+            </td>
+            <td class="text-center align-middle">${menuBadge}</td>
+            <td class="align-middle font-weight-bold text-primary">${l.item || '-'}</td>
+            <td class="align-middle text-truncate" style="max-width:180px;" title="${l.name_part || ''}">${l.name_part || '-'}</td>
+            <td class="text-center align-middle">
+              <span class="badge badge-light" style="border:1px solid var(--line); font-weight:600; color:var(--text-strong);">${l.process || '-'}</span>
+            </td>
+            <td class="text-right align-middle font-weight-bold text-success pr-3">${goodQty.toLocaleString()}</td>
+            <td class="text-right align-middle font-weight-bold ${ngQty > 0 ? 'text-danger' : 'text-muted'} pr-3">${ngQty.toLocaleString()}</td>
+            <td class="align-middle small" style="white-space:nowrap;">${l.employee_name || '-'}</td>
+            <td class="text-center align-middle" style="white-space:nowrap;">
+              <div class="d-inline-flex" style="gap:4px;">
+                <button class="btn btn-sm btn-outline-primary btn-edit-single-log" data-id="${l.id}" title="แก้ไขรายการนี้" style="padding:2px 7px; border-radius:6px; font-size:0.75rem;">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger btn-delete-single-log" data-id="${l.id}" title="ลบรายการนี้" style="padding:2px 7px; border-radius:6px; font-size:0.75rem;">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>`;
+      });
+
+      const tableHtml = `
+        <div class="log-table-wrapper">
+          <table class="table table-hover table-sm mb-0 log-excel-table">
+            <thead>
+              <tr>
+                <th class="text-center align-middle" style="width:36px;">
+                  <input type="checkbox" id="chk-table-select-all" class="custom-checkbox" style="width:17px; height:17px;">
+                </th>
+                <th class="text-center align-middle">วัน-เวลา</th>
+                <th class="text-center align-middle">เมนู</th>
+                <th class="align-middle">ITEM</th>
+                <th class="align-middle">NAME PART</th>
+                <th class="text-center align-middle">Process</th>
+                <th class="text-right align-middle pr-3">จำนวนดี</th>
+                <th class="text-right align-middle pr-3">จำนวนเสีย</th>
+                <th class="align-middle">ผู้ปฏิบัติงาน</th>
+                <th class="text-center align-middle">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>`;
+
+      ui.logItemsContainer.innerHTML = tableHtml;
+    }
+
+    function bindLogItemsEvents() {
+      const chkTableAll = ui.logItemsContainer.querySelector('#chk-table-select-all');
+      if (chkTableAll) {
+        chkTableAll.checked = ui.chkLogSelectAll ? ui.chkLogSelectAll.checked : false;
+        chkTableAll.addEventListener('change', () => {
+          if (ui.chkLogSelectAll) ui.chkLogSelectAll.checked = chkTableAll.checked;
+          toggleSelectAllLogs(chkTableAll.checked);
+        });
+      }
+
+      // Individual checkboxes
       ui.logItemsContainer.querySelectorAll('.log-chk').forEach(chk => {
-        chk.addEventListener('change', e => {
+        chk.addEventListener('change', () => {
           const id = chk.getAttribute('data-id');
           const card = chk.closest('.log-item-card');
+          const row = chk.closest('.log-item-row');
           if (chk.checked) {
             state.selectedLogIds.add(id);
-            card && card.classList.add('selected');
+            if (card) card.classList.add('selected');
+            if (row) row.classList.add('selected');
           } else {
             state.selectedLogIds.delete(id);
-            card && card.classList.remove('selected');
+            if (card) card.classList.remove('selected');
+            if (row) row.classList.remove('selected');
           }
+          const allCount = ui.logItemsContainer.querySelectorAll('.log-chk').length;
+          const isAllSelected = allCount > 0 && state.selectedLogIds.size === allCount;
+          if (ui.chkLogSelectAll) ui.chkLogSelectAll.checked = isAllSelected;
+          if (chkTableAll) chkTableAll.checked = isAllSelected;
           updateSelectedLogsUI();
         });
       });
 
-      // Event listener for single edit buttons
+      // Single edit buttons
       ui.logItemsContainer.querySelectorAll('.btn-edit-single-log').forEach(btn => {
         btn.addEventListener('click', e => {
           e.stopPropagation();
           const id = btn.getAttribute('data-id');
-          const found = currentLogsList.find(x => x.id === id);
+          const found = currentLogsList.find(x => String(x.id) === String(id));
           if (found) {
             openEditLogModal(found);
           }
         });
       });
 
-      // Event listener for single delete buttons
+      // Single delete buttons
       ui.logItemsContainer.querySelectorAll('.btn-delete-single-log').forEach(btn => {
         btn.addEventListener('click', e => {
           e.stopPropagation();
@@ -5113,27 +5377,129 @@
       ui.selectedLogsCount.textContent = count;
       if (count > 0) {
         ui.btnDeleteSelectedLogs.style.display = 'inline-flex';
+        if (ui.btnExportLogsExcel) {
+          ui.btnExportLogsExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill text-success mr-1"></i> Export Excel (${count})`;
+          ui.btnExportLogsExcel.title = `ส่งออกเฉพาะ ${count} รายการที่เลือกเป็นไฟล์ Excel`;
+        }
       } else {
         ui.btnDeleteSelectedLogs.style.display = 'none';
+        if (ui.btnExportLogsExcel) {
+          ui.btnExportLogsExcel.innerHTML = `<i class="bi bi-file-earmark-excel-fill text-success mr-1"></i> Export Excel`;
+          ui.btnExportLogsExcel.title = 'ส่งออกข้อมูลประวัติการผลิตทั้งหมดในตารางเป็นไฟล์ Excel';
+        }
       }
     }
 
-    ui.chkLogSelectAll.addEventListener('change', () => {
-      const checked = ui.chkLogSelectAll.checked;
+    function exportLogsToExcel() {
+      let logsToExport = [];
+      const hasSelected = state.selectedLogIds && state.selectedLogIds.size > 0;
+      if (hasSelected) {
+        logsToExport = currentLogsList.filter(l => state.selectedLogIds.has(String(l.id)));
+      }
+      if (!logsToExport || logsToExport.length === 0) {
+        logsToExport = currentLogsList;
+      }
+
+      if (!logsToExport || logsToExport.length === 0) {
+        showToast('ไม่พบรายการข้อมูลประวัติการผลิตที่จะส่งออกค่ะ', 'warning', 3000);
+        return;
+      }
+
+      if (typeof XLSX === 'undefined') {
+        showToast('กำลังโหลดโมดูล Excel กรุณารอสักครู่แล้วลองใหม่อีกครั้งค่ะ', 'warning', 3000);
+        return;
+      }
+
+      try {
+        const excelRows = logsToExport.map((l, idx) => {
+          let timeStr = '-';
+          if (l.timestamp) {
+            const dt = new Date(l.timestamp);
+            if (!isNaN(dt)) timeStr = dt.toLocaleString('th-TH');
+          }
+          return {
+            'ลำดับ': idx + 1,
+            'วัน-เวลา': timeStr,
+            'เมนู': l.menu || '-',
+            'ITEM': l.item || '-',
+            'NAME PART': l.name_part || '-',
+            'Process': l.process || '-',
+            'จำนวนดี': Number(l.good_qty || 0),
+            'จำนวนเสีย': Number(l.ng_qty || 0),
+            'ผู้ปฏิบัติงาน': l.employee_name || '-'
+          };
+        });
+
+        const ws = XLSX.utils.json_to_sheet(excelRows);
+        ws['!cols'] = [
+          { wch: 8 },  // ลำดับ
+          { wch: 22 }, // วัน-เวลา
+          { wch: 16 }, // เมนู
+          { wch: 15 }, // ITEM
+          { wch: 28 }, // NAME PART
+          { wch: 16 }, // Process
+          { wch: 12 }, // จำนวนดี
+          { wch: 12 }, // จำนวนเสีย
+          { wch: 26 }  // ผู้ปฏิบัติงาน
+        ];
+
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Production_Logs');
+
+        const kw = ui.filterLogKeyword ? ui.filterLogKeyword.value.trim() : '';
+        const sDate = ui.filterLogStartDate ? ui.filterLogStartDate.value : '';
+        const eDate = ui.filterLogEndDate ? ui.filterLogEndDate.value : '';
+
+        const nameParts = ['Production_Logs'];
+        if (kw) nameParts.push(kw.replace(/[^a-zA-Z0-9_\u0E00-\u0E7F-]/g, '_'));
+        if (sDate && eDate) {
+          nameParts.push(sDate === eDate ? sDate : `${sDate}_to_${eDate}`);
+        } else if (sDate) {
+          nameParts.push(`from_${sDate}`);
+        } else if (eDate) {
+          nameParts.push(`up_to_${eDate}`);
+        } else {
+          nameParts.push(new Date().toISOString().split('T')[0]);
+        }
+        const filename = `${nameParts.join('_')}.xlsx`;
+
+        XLSX.writeFile(wb, filename);
+        showToast(`ส่งออก Excel สำเร็จเรียบร้อย (${logsToExport.length} รายการ)`, 'success', 3500);
+      } catch (err) {
+        console.error('Export Excel Error:', err);
+        showToast('เกิดข้อผิดพลาดในการส่งออก Excel: ' + err.message, 'error', 5000);
+      }
+    }
+
+    if (ui.btnExportLogsExcel) ui.btnExportLogsExcel.addEventListener('click', exportLogsToExcel);
+
+    function toggleSelectAllLogs(checked) {
       ui.logItemsContainer.querySelectorAll('.log-chk').forEach(chk => {
         chk.checked = checked;
         const id = chk.getAttribute('data-id');
         const card = chk.closest('.log-item-card');
+        const row = chk.closest('.log-item-row');
         if (checked) {
           state.selectedLogIds.add(id);
-          card && card.classList.add('selected');
+          if (card) card.classList.add('selected');
+          if (row) row.classList.add('selected');
         } else {
           state.selectedLogIds.delete(id);
-          card && card.classList.remove('selected');
+          if (card) card.classList.remove('selected');
+          if (row) row.classList.remove('selected');
         }
       });
+      const chkTableAll = ui.logItemsContainer.querySelector('#chk-table-select-all');
+      if (chkTableAll) chkTableAll.checked = checked;
+      if (ui.chkLogSelectAll) ui.chkLogSelectAll.checked = checked;
       updateSelectedLogsUI();
-    });
+    }
+
+    if (ui.chkLogSelectAll) {
+      ui.chkLogSelectAll.addEventListener('change', () => {
+        toggleSelectAllLogs(ui.chkLogSelectAll.checked);
+      });
+    }
 
     ui.btnDeleteSelectedLogs.addEventListener('click', () => {
       const ids = Array.from(state.selectedLogIds);
@@ -5158,21 +5524,51 @@
         .deleteProductionLogsByIds(ids);
     }
 
+    if (ui.btnViewCards) ui.btnViewCards.addEventListener('click', () => setLogViewMode('cards'));
+    if (ui.btnViewTable) ui.btnViewTable.addEventListener('click', () => setLogViewMode('table'));
+
     ui.btnRefreshLogs.addEventListener('click', loadProductionLogs);
     ui.btnClearLogFilters.addEventListener('click', () => {
-      ui.filterLogKeyword.value = '';
-      ui.filterLogDate.value = '';
-      ui.chkLogSelectAll.checked = false;
+      if (ui.filterLogKeyword) ui.filterLogKeyword.value = '';
+      if (ui.filterLogStartDate) ui.filterLogStartDate.value = '';
+      if (ui.filterLogEndDate) ui.filterLogEndDate.value = '';
+      if (ui.filterLogDate) ui.filterLogDate.value = '';
+      if (ui.filterLogLimit) ui.filterLogLimit.value = '250';
+      if (ui.chkLogSelectAll) ui.chkLogSelectAll.checked = false;
       state.selectedLogIds.clear();
       updateSelectedLogsUI();
       loadProductionLogs();
       showToast('ล้างตัวกรองประวัติการผลิตเรียบร้อย', 'info', 1500);
     });
-    ui.filterLogKeyword.addEventListener('input', () => {
-      clearTimeout(partSearchTimer);
-      partSearchTimer = setTimeout(loadProductionLogs, 400);
-    });
-    ui.filterLogDate.addEventListener('change', loadProductionLogs);
+
+    if (ui.filterLogLimit) {
+      ui.filterLogLimit.addEventListener('change', loadProductionLogs);
+    }
+
+    if (ui.filterLogKeyword) {
+      ui.filterLogKeyword.addEventListener('input', () => {
+        clearTimeout(partSearchTimer);
+        partSearchTimer = setTimeout(loadProductionLogs, 400);
+      });
+    }
+
+    if (ui.filterLogStartDate) {
+      ui.filterLogStartDate.addEventListener('change', () => {
+        if (ui.filterLogEndDate && (!ui.filterLogEndDate.value || ui.filterLogEndDate.value < ui.filterLogStartDate.value)) {
+          ui.filterLogEndDate.value = ui.filterLogStartDate.value;
+        }
+        loadProductionLogs();
+      });
+    }
+
+    if (ui.filterLogEndDate) {
+      ui.filterLogEndDate.addEventListener('change', () => {
+        if (ui.filterLogStartDate && (!ui.filterLogStartDate.value || ui.filterLogStartDate.value > ui.filterLogEndDate.value)) {
+          ui.filterLogStartDate.value = ui.filterLogEndDate.value;
+        }
+        loadProductionLogs();
+      });
+    }
 
     // -------------------------------------------------------------
     // Tab 3: Daily Summary Management
