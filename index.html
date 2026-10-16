@@ -2799,7 +2799,10 @@
             </div>
 
             <div class="form-group mb-3">
-              <label class="small font-weight-bold text-muted mb-1">ยอดขายสะสมเดือนนี้ (accumulate_income ฿)</label>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label class="small font-weight-bold text-muted mb-0">ยอดขายสะสมเดือนนี้ (accumulate_income ฿)</label>
+                <small id="summary-accum-hint" class="text-muted" style="font-size:0.75rem;">(คำนวณให้อัตโนมัติ)</small>
+              </div>
               <input id="summary-accum-income" type="number" step="0.01" class="form-control font-weight-bold text-primary text-center" style="min-height:48px; font-size:1.15rem;" placeholder="0.00">
             </div>
 
@@ -2808,7 +2811,12 @@
             </button>
           </div>
 
-          <h6 class="font-weight-bold mb-2 small text-muted"><i class="bi bi-clock-history"></i> ประวัติยอดขายล่าสุด</h6>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="font-weight-bold small text-muted mb-0"><i class="bi bi-clock-history"></i> ประวัติยอดขายล่าสุด</h6>
+            <button id="btn-recalc-month-summary" type="button" class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem; border-radius:8px; padding:3px 10px;" title="คำนวณยอดขายสะสมของเดือนนี้ใหม่ทั้งหมด">
+              <i class="bi bi-arrow-repeat"></i> คำนวณยอดสะสมเดือนนี้ใหม่
+            </button>
+          </div>
           <div id="recent-summary-list" style="max-height:220px; overflow-y:auto;"></div>
         </div>
 
@@ -3070,6 +3078,18 @@
       }
     }
   };
+
+  function toBangkokDateStr(dateInput) {
+    if (!dateInput) return null;
+    const d = new Date(dateInput);
+    if (isNaN(d.getTime())) return null;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Bangkok',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(d);
+  }
 
   function makeSupabaseRunner(success, failure) {
     const runner = {};
@@ -3497,36 +3517,38 @@
             const newAmount = newGood * itemPrice;
             const diffAmount = newAmount - oldAmount;
 
-            const oldDateStr = oldTime ? new Date(oldTime).toISOString().split('T')[0] : null;
-            const newDateStr = newTimestamp ? new Date(newTimestamp).toISOString().split('T')[0] : null;
+            const oldDateStr = toBangkokDateStr(oldTime);
+            const newDateStr = toBangkokDateStr(newTimestamp);
 
             if (oldDateStr && newDateStr && oldDateStr === newDateStr) {
               if (diffAmount !== 0) {
                 const { data: ds } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
                 if (ds) {
                   const newDaily = Math.max(0, (Number(ds.daily_income || 0)) + diffAmount);
-                  const newAccum = Math.max(0, (Number(ds.accumulate_income || 0)) + diffAmount);
-                  await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', newDateStr);
+                  await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
                 } else {
-                  await sb.from('daily_summary').insert({ date: newDateStr, daily_income: newAmount, accumulate_income: newAmount });
+                  await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
                 }
+                await recalculateMonthAccumulate(newDateStr.substring(0, 7));
               }
             } else if (oldDateStr && newDateStr && oldDateStr !== newDateStr) {
               // Deduct from old date
               const { data: oldDs } = await sb.from('daily_summary').select('*').eq('date', oldDateStr).maybeSingle();
               if (oldDs) {
                 const newDaily = Math.max(0, (Number(oldDs.daily_income || 0)) - oldAmount);
-                const newAccum = Math.max(0, (Number(oldDs.accumulate_income || 0)) - oldAmount);
-                await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', oldDateStr);
+                await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', oldDateStr);
               }
               // Add to new date
               const { data: newDs } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
               if (newDs) {
                 const newDaily = Math.max(0, (Number(newDs.daily_income || 0)) + newAmount);
-                const newAccum = Math.max(0, (Number(newDs.accumulate_income || 0)) + newAmount);
-                await sb.from('daily_summary').update({ daily_income: newDaily, accumulate_income: newAccum }).eq('date', newDateStr);
+                await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
               } else {
-                await sb.from('daily_summary').insert({ date: newDateStr, daily_income: newAmount, accumulate_income: newAmount });
+                await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
+              }
+              await recalculateMonthAccumulate(oldDateStr.substring(0, 7));
+              if (newDateStr.substring(0, 7) !== oldDateStr.substring(0, 7)) {
+                await recalculateMonthAccumulate(newDateStr.substring(0, 7));
               }
             }
           }
@@ -3546,11 +3568,58 @@
       } catch (err) { _failure(err); }
     };
 
+    async function recalculateMonthAccumulate(monthPrefix) {
+      if (!monthPrefix) return;
+      const monthStart = `${monthPrefix}-01`;
+      const monthEnd = `${monthPrefix}-31`;
+      const { data: rows, error } = await sb.from('daily_summary')
+        .select('*')
+        .gte('date', monthStart)
+        .lte('date', monthEnd)
+        .order('date', { ascending: true });
+
+      if (error || !rows || rows.length === 0) return;
+
+      let runningAccum = 0;
+      for (const r of rows) {
+        runningAccum = Math.round((runningAccum + Number(r.daily_income || 0)) * 100) / 100;
+        if (Math.abs(Number(r.accumulate_income || 0) - runningAccum) > 0.001) {
+          await sb.from('daily_summary')
+            .update({ accumulate_income: runningAccum })
+            .eq('date', r.date);
+          r.accumulate_income = runningAccum;
+        }
+      }
+    }
+
+    runner.recalculateMonthlyAccumulate = async function(monthPrefix) {
+      try {
+        if (!monthPrefix) throw new Error('กรุณาระบุเดือนที่ต้องการคำนวณใหม่');
+        await recalculateMonthAccumulate(monthPrefix);
+        _success({ ok: true, message: `คำนวณยอดขายสะสมเดือน ${monthPrefix} เรียบร้อยแล้ว` });
+      } catch (err) { _failure(err); }
+    };
+
     runner.getDailySummaryByDate = async function(dateStr) {
       try {
         const { data, error } = await sb.from('daily_summary').select('*').eq('date', dateStr).maybeSingle();
         if (error) throw error;
-        _success(data || null);
+
+        const monthPrefix = dateStr.substring(0, 7);
+        const monthStart = `${monthPrefix}-01`;
+        const { data: prevRows } = await sb.from('daily_summary')
+          .select('accumulate_income')
+          .gte('date', monthStart)
+          .lt('date', dateStr)
+          .order('date', { ascending: false })
+          .limit(1);
+
+        const previousAccumulate = (prevRows && prevRows.length > 0) ? Number(prevRows[0].accumulate_income || 0) : 0;
+
+        _success({
+          summary: data || null,
+          previousAccumulate: previousAccumulate
+        });
       } catch (err) { _failure(err); }
     };
 
@@ -3564,14 +3633,20 @@
 
     runner.saveDailySummary = async function(summaryData) {
       try {
+        const targetDate = summaryData.date;
+        const monthPrefix = targetDate.substring(0, 7);
         const payload = {
-          date: summaryData.date,
+          date: targetDate,
           daily_income: Number(summaryData.daily_income) || 0,
           accumulate_income: Number(summaryData.accumulate_income) || 0
         };
         const { data, error } = await sb.from('daily_summary').upsert(payload, { onConflict: 'date' }).select().single();
         if (error) throw error;
-        _success({ ok: true, message: `บันทึกยอดขายวันที่ ${summaryData.date} เรียบร้อยแล้ว`, data });
+
+        // Recalculate full month to cascade accumulate_income to subsequent dates
+        await recalculateMonthAccumulate(monthPrefix);
+
+        _success({ ok: true, message: `บันทึกยอดขายวันที่ ${targetDate} และอัปเดตยอดสะสมเรียบร้อยแล้ว`, data });
       } catch (err) { _failure(err); }
     };
 
@@ -3798,7 +3873,9 @@
       btnFetchSummary: $('#btn-fetch-summary'),
       summaryDailyIncome: $('#summary-daily-income'),
       summaryAccumIncome: $('#summary-accum-income'),
+      summaryAccumHint: $('#summary-accum-hint'),
       btnSaveSummary: $('#btn-save-summary'),
+      btnRecalcMonthSummary: $('#btn-recalc-month-summary'),
       recentSummaryList: $('#recent-summary-list'),
 
       // Change Password Tab
@@ -3855,7 +3932,8 @@
       columnFilters: {},
       selectedLogIds: new Set(),
       logViewMode: (function() { try { return localStorage.getItem('smt_log_view_mode') || 'cards'; } catch(e) { return 'cards'; } })(),
-      confirmCallback: null
+      confirmCallback: null,
+      currentSummaryPrevAccum: 0
     };
 
     function showToast(m, t='info', d=3000){
@@ -4435,7 +4513,7 @@
       switchSettingTab('tab-part-stock');
       
       // Auto set today's date for summary
-      const todayIso = new Date().toISOString().split('T')[0];
+      const todayIso = toBangkokDateStr(new Date());
       ui.summaryDatePicker.value = todayIso;
       loadDailySummary(todayIso);
       loadRecentDailySummaries();
@@ -4468,6 +4546,13 @@
         if (pane.id === tabId) pane.style.display = 'block';
         else pane.style.display = 'none';
       });
+
+      if (tabId === 'tab-daily-summary') {
+        loadRecentDailySummaries();
+        if (ui.summaryDatePicker && ui.summaryDatePicker.value) {
+          loadDailySummary(ui.summaryDatePicker.value);
+        }
+      }
 
       if (tabId === 'tab-prod-logs') {
         if (state.logViewMode === 'table') {
@@ -5364,6 +5449,10 @@
           closeEditLogModal();
           showToast(res && res.message ? res.message : 'แก้ไขประวัติการผลิตเรียบร้อย', 'success', 3000);
           loadProductionLogs();
+          loadRecentDailySummaries();
+          if (ui.summaryDatePicker && ui.summaryDatePicker.value) {
+            loadDailySummary(ui.summaryDatePicker.value);
+          }
         })
         .withFailureHandler(err => {
           showLoading(false);
@@ -5576,14 +5665,21 @@
     function loadDailySummary(dateStr) {
       showLoading(true, 'กำลังดึงยอดขาย...');
       google.script.run
-        .withSuccessHandler(data => {
+        .withSuccessHandler(res => {
           showLoading(false);
+          const data = res && res.summary !== undefined ? res.summary : res;
+          const prevAccum = res && res.previousAccumulate !== undefined ? Number(res.previousAccumulate) : 0;
+          state.currentSummaryPrevAccum = prevAccum;
+
           if (data) {
-            ui.summaryDailyIncome.value = data.daily_income || 0;
-            ui.summaryAccumIncome.value = data.accumulate_income || 0;
+            const daily = Number(data.daily_income || 0);
+            ui.summaryDailyIncome.value = daily;
+            ui.summaryAccumIncome.value = (data.accumulate_income !== null && data.accumulate_income !== undefined)
+              ? Number(data.accumulate_income)
+              : Math.round((prevAccum + daily) * 100) / 100;
           } else {
             ui.summaryDailyIncome.value = 0;
-            ui.summaryAccumIncome.value = 0;
+            ui.summaryAccumIncome.value = Math.round(prevAccum * 100) / 100;
           }
         })
         .withFailureHandler(err => {
@@ -5591,6 +5687,15 @@
           showToast('ดึงยอดขายล้มเหลว: ' + err.message, 'error');
         })
         .getDailySummaryByDate(dateStr);
+    }
+
+    if (ui.summaryDailyIncome) {
+      ui.summaryDailyIncome.addEventListener('input', () => {
+        const daily = Number(ui.summaryDailyIncome.value) || 0;
+        const prev = Number(state.currentSummaryPrevAccum) || 0;
+        const calcAccum = Math.round((prev + daily) * 100) / 100;
+        ui.summaryAccumIncome.value = calcAccum;
+      });
     }
 
     function loadRecentDailySummaries() {
@@ -5641,6 +5746,28 @@
       loadDailySummary(d);
     });
 
+    if (ui.btnRecalcMonthSummary) {
+      ui.btnRecalcMonthSummary.addEventListener('click', () => {
+        const d = ui.summaryDatePicker.value || toBangkokDateStr(new Date());
+        const monthPrefix = d.substring(0, 7);
+        showLoading(true, `กำลังคำนวณยอดสะสมเดือน ${monthPrefix}...`);
+        google.script.run
+          .withSuccessHandler(res => {
+            showLoading(false);
+            showToast(res && res.message ? res.message : 'คำนวณยอดสะสมเดือนนี้เรียบร้อย', 'success');
+            loadRecentDailySummaries();
+            if (ui.summaryDatePicker.value) {
+              loadDailySummary(ui.summaryDatePicker.value);
+            }
+          })
+          .withFailureHandler(err => {
+            showLoading(false);
+            showToast('คำนวณยอดสะสมล้มเหลว: ' + err.message, 'error', 5000);
+          })
+          .recalculateMonthlyAccumulate(monthPrefix);
+      });
+    }
+
     ui.btnSaveSummary.addEventListener('click', () => {
       const dateStr = ui.summaryDatePicker.value;
       if (!dateStr) {
@@ -5659,6 +5786,7 @@
           showLoading(false);
           showToast(res && res.message ? res.message : 'บันทึกยอดขายเรียบร้อย', 'success');
           loadRecentDailySummaries();
+          loadDailySummary(dateStr);
         })
         .withFailureHandler(err => {
           showLoading(false);
