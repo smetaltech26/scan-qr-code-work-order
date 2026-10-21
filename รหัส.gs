@@ -482,9 +482,9 @@ function doPost(e) {
     const requestData = JSON.parse(e.postData.contents);
     const functionName = requestData.functionName;
     const args = requestData.arguments || [];
-    
+
     let result;
-    
+
     // วิ่งไปเรียกใช้ฟังก์ชันเดิมในระบบของพี่ตามที่หน้าเว็บร้องขอมา
     if (functionName === 'getItemDetails') {
       result = getItemDetails(args[0]);
@@ -499,11 +499,11 @@ function doPost(e) {
     } else {
       throw new Error('ไม่พบฟังก์ชัน: ' + functionName);
     }
-    
+
     // ส่งผลลัพธ์กลับไปให้หน้าเว็บภายนอกเป็น JSON
     return ContentService.createTextOutput(JSON.stringify({ result: result }))
       .setMimeType(ContentService.MimeType.JSON);
-          
+
   } catch (error) {
     // หากเกิด Error ให้ส่งข้อความ Error กลับไปบอกหน้าเว็บ
     return ContentService.createTextOutput(JSON.stringify({ error: error.message || error.toString() }))
@@ -517,7 +517,9 @@ function doPost(e) {
 
 const AI_CONFIG = {
   // 1. ดึงคีย์จาก Script Properties เพื่อความปลอดภัย ไม่ให้คีย์หลุดไปบน GitHub
-  GEMINI_API_KEY: PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'), 
+  GEMINI_API_KEY: PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY'),
+  MODEL_NAME: PropertiesService.getScriptProperties().getProperty('GEMINI_MODEL') || 'gemini-2.5-flash',
+  FALLBACK_MODEL_NAME: PropertiesService.getScriptProperties().getProperty('GEMINI_FALLBACK_MODEL') || 'gemini-3.5-flash',
   SENDER_NAME: 'Daily Report Part MA',
   REPORT_EMAILS: [
     'pongsak@smetaltech.co.th',
@@ -530,324 +532,416 @@ const AI_CONFIG = {
 };
 
 function sendDailySmartReport() {
-  console.log('📌 ขั้นตอนที่ 1: เริ่มต้นดึงข้อมูลจาก Google Sheet...');
-  const ss = SpreadsheetApp.openById(CONFIG.SHEET_ID);
-  const sheet = ss.getSheetByName(CONFIG.SHEET2_NAME);
-  if (!sheet) {
-    console.log('❌ ข้อผิดพลาด: ไม่พบหน้า Sheet ที่ระบุค่ะ เช็คชื่อ Sheet2 อีกครั้งนะคะ');
-    return;
-  }
+  console.log('⏰ เริ่มต้นการทำงานของทริกเกอร์อัตโนมัติประจำวัน (04:00 น.)...');
+  return runSmartReportCore(null, false, false);
+}
 
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) {
-    console.log('❌ ข้อผิดพลาด: ตารางว่างเปล่า ไม่มีข้อมูลเลยค่ะ');
-    return;
-  }
+/**
+ * ฟังก์ชันส่งรายงานแบบกำหนดเอง (รองรับระบุวันที่, Revise, Test Only)
+ */
+function runManualReport(selectedDateString, isRevise, isTestOnly) {
+  return runSmartReportCore(selectedDateString, isRevise, isTestOnly);
+}
 
-  // ไนท์ปรับให้ดึงข้อมูลของ "เมื่อวาน" เสมอ ไม่ว่าจะรันสคริปต์ตอนกี่โมงก็ตามนะคะ
-  const reportDate = new Date();
-  reportDate.setDate(reportDate.getDate() - 1);
-  
+/**
+ * ฟังก์ชันสำหรับทดสอบส่งให้คุณ Pongsak คนเดียว (ไม่กระทบของจริง)
+ */
+function testSendReportPongsakOnly() {
+  console.log('📌 โหมดทดสอบ: กำลังสร้างรายงานและส่งให้ pongsak@smetaltech.co.th คนเดียว...');
+  return runSmartReportCore(null, false, true);
+}
+/**
+ * ฟังก์ชันทดสอบพิเศษ: ส่งรายงานของวันที่ 20/10/2026 โดยใช้ gemini-3.5-flash ส่งหาคุณพงษ์ศักดิ์เท่านั้น
+ */
+function testSendReport20OctGemini35Only() {
+  console.log('📌 โหมดทดสอบพิเศษ: กำลังสร้างรายงานวันที่ 20/10/2026 ด้วย Gemini 3.5 Flash ส่งหาคุณพงษ์ศักดิ์เท่านั้น...');
+  const originalModel = AI_CONFIG.MODEL_NAME;
+  try {
+    AI_CONFIG.MODEL_NAME = 'gemini-3.5-flash';
+    return runManualReport('2026-10-20', false, true);
+  } finally {
+    AI_CONFIG.MODEL_NAME = originalModel;
+  }
+}
+
+
+/**
+ * ฟังก์ชันแกนหลักในการดึงข้อมูลจาก Supabase และส่งรายงาน
+ */
+function runSmartReportCore(selectedDateString, isRevise, isTestOnly) {
+  const recipients = isTestOnly
+    ? ['pongsak@smetaltech.co.th']
+    : [
+        'pongsak@smetaltech.co.th',
+        'therayut@smetaltech.co.th',
+        'wsompol@smetaltech.co.th',
+        'ma.2@smetaltech.co.th',
+        'ma.1@smetaltech.co.th',
+        'ma.3@smetaltech.co.th'
+      ];
+  console.log(`📌 โหมด: ${isTestOnly ? 'Test Only (ส่งหาคุณพงษ์ศักดิ์เท่านั้น)' : 'ส่งจริงถึงทีมงานทั้งหมด 6 ท่าน'}`);
+  console.log(`📌 สถานะ: ${isRevise ? 'Revise Report' : 'รายงานปกติ'}`);
+  console.log('📌 ขั้นตอนที่ 1: เริ่มต้นดึงข้อมูลจาก Supabase...');
+
+  // =========================================================
+  // ตั้งค่าการเชื่อมต่อ Supabase
+  // =========================================================
+  const SUPABASE_URL = 'https://orgbrvopqzpfvmtvxmcd.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9yZ2Jydm9wcXpwZnZtdHZ4bWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxMTc5ODEsImV4cCI6MjEwMjY5Mzk4MX0.R-l6wgFtcoYCvXPrmO3xEjychxvEt4p_XUl71pchs00';
+
+  const headers = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Content-Type': 'application/json'
+  };
+
   const timeZone = Session.getScriptTimeZone();
+  let reportDate = new Date();
+  if (selectedDateString && typeof selectedDateString === 'string' && selectedDateString.trim() !== '') {
+    reportDate = Utilities.parseDate(selectedDateString.trim() + ' 12:00:00', timeZone, 'yyyy-MM-dd HH:mm:ss');
+  } else {
+    reportDate.setDate(reportDate.getDate() - 1);
+  }
   const targetDateString = Utilities.formatDate(reportDate, timeZone, "dd/MM/yyyy");
-  
+  const targetIsoDate = Utilities.formatDate(reportDate, timeZone, "yyyy-MM-dd");
+
   let todayLogText = '';
   let matchCount = 0;
 
-  // ตัวแปรสำหรับบวกเลขคำนวณ (เพื่อความเป๊ะ 100%)
   let totalReceiving = 0;
   let totalProduced = 0;
   let totalShipped = 0;
   let empStats = {};
+  let dailyIncome = 0;
 
-// ==========================================
-  // 🌟 ส่วนที่ 1: ดึงข้อมูลราคาเตรียมไว้คำนวณยอดขาย
-  // ==========================================
-  const INV_SHEET_ID = '1Aq1ZvwqKVKDQGIynEILrFIEe6A-sUqFk9Ztxm6SrNPo';
-  const invSs = SpreadsheetApp.openById(INV_SHEET_ID);
-  
-  const priceSheet = invSs.getSheetByName('price');
-  const priceData = priceSheet.getDataRange().getValues();
+  // =========================================================
+  // ดึงข้อมูลราคา (Price) จากตาราง inventory ใน Supabase
+  // =========================================================
   let priceMap = {};
-  for (let p = 1; p < priceData.length; p++) {
-    let itemCode = String(priceData[p][0]).trim();
-    let price = Number(priceData[p][4]) || 0; // คอลัมน์ E (Index 4) คือ Price
-    if (itemCode !== "") priceMap[itemCode] = price;
+  try {
+    const invUrl = `${SUPABASE_URL}/rest/v1/inventory?select=item,price&limit=5000`;
+    const invRes = UrlFetchApp.fetch(invUrl, { headers: headers });
+    const invData = JSON.parse(invRes.getContentText());
+
+    invData.forEach(row => {
+      priceMap[row.item] = Number(row.price) || 0;
+    });
+  } catch (e) {
+    console.log('⚠️ ไม่สามารถดึงราคาจาก Supabase ได้: ' + e.message);
   }
 
-  let dailyIncome = 0;
-  let accumulateIncome = 0;
-  // ==========================================
+  // =========================================================
+  // ดึงข้อมูลการผลิต (Production Logs) ของเมื่อวานจาก Supabase
+  // =========================================================
+  console.log(`📌 ขั้นตอนที่ 2: ค้นหาข้อมูลการผลิตของวันที่ ${targetDateString}`);
 
-  console.log(`📌 ขั้นตอนที่ 2: กำลังค้นหาข้อมูลการผลิตของวันที่ ${targetDateString}`);
+  // สร้างช่วงเวลาค้นหา: gte (>= เริ่มวัน) ถึง lt (< เริ่มวันถัดไป)
+  const nextDate = new Date(reportDate);
+  nextDate.setDate(nextDate.getDate() + 1);
+  const gteString = Utilities.formatDate(reportDate, timeZone, "yyyy-MM-dd'T'00:00:00");
+  const ltString = Utilities.formatDate(nextDate, timeZone, "yyyy-MM-dd'T'00:00:00");
 
-  for (let i = 1; i < data.length; i++) {
-    const row = data[i];
-    if (row[11] instanceof Date) {
-      const timestampString = Utilities.formatDate(row[11], timeZone, "dd/MM/yyyy");
-      
-      if (timestampString === targetDateString) {
-        const process = row[5];
-        const menuStatus = row[10]; 
-        let isValidData = false;
+  try {
+    const logsUrl = `${SUPABASE_URL}/rest/v1/production_logs?timestamp=gte.${gteString}&timestamp=lt.${ltString}&limit=5000`;
+    const logsRes = UrlFetchApp.fetch(logsUrl, { headers: headers });
+    const logsData = JSON.parse(logsRes.getContentText());
 
-        // เช็คเงื่อนไขตาม Process และ Menu
-        if (process === 'Receiving' && menuStatus === 'เริ่มการทำงาน') {
-          isValidData = true;
-        } else if (['Cutting', 'Milling', 'CNC', 'Grinding', 'Finished Goods'].includes(process) && menuStatus === 'เสร็จการทำงาน') {
-          isValidData = true;
-        } else if (process === 'Ship' && menuStatus === 'ส่งสินค้า') {
-          isValidData = true;
+    logsData.forEach(row => {
+      const process = row.process;
+      const menuStatus = row.menu;
+      let isValidData = false;
+
+      // ตรวจสอบ Process และ Menu ให้ตรงตามเงื่อนไข
+      if (process === 'Receiving' && menuStatus === 'เริ่มการทำงาน') {
+        isValidData = true;
+      } else if (['Cutting', 'Milling', 'CNC', 'Grinding', 'Finished Goods'].includes(process) && menuStatus === 'เสร็จการทำงาน') {
+        isValidData = true;
+      } else if (process === 'Ship' && menuStatus === 'ส่งสินค้า') {
+        isValidData = true;
+      }
+
+      if (isValidData) {
+        const goodQty = Number(row.good_qty) || 0;
+        const ngQty = Number(row.ng_qty) || 0;
+        const employeeName = row.employee_name ? String(row.employee_name).trim() : '-';
+
+        todayLogText += `- Item: ${row.item} (Name Part: ${row.name_part}), Process: ${row.process}, งานดี: ${goodQty}, NG: ${ngQty}, พนักงาน: ${employeeName}\n`;
+        matchCount++;
+
+        // บวกยอดแยกระบบ
+        if (process === 'Receiving') {
+          totalReceiving += goodQty;
+        } else if (process === 'Ship') {
+          totalShipped += goodQty;
+
+          let itemCode = String(row.item).trim();
+          let itemPrice = priceMap[itemCode] || 0;
+          dailyIncome += (goodQty * itemPrice);
+        } else {
+          totalProduced += goodQty;
         }
 
-        if (isValidData) {
-           const goodQty = (row[6] === '' || row[6] === undefined) ? 0 : Number(row[6]);
-           const ngQty = (row[7] === '' || row[7] === undefined) ? 0 : Number(row[7]);
-           const employeeName = (row[9] === '' || row[9] === undefined) ? '-' : String(row[9]).trim();
-
-           todayLogText += `- Item: ${row[1]} (Name Part: ${row[2]}), Process: ${row[5]}, งานดี: ${goodQty}, NG: ${ngQty}, พนักงาน: ${employeeName}\n`;
-           matchCount++;
-
-           // --- สคริปต์บวกยอดแยกระบบ ---
-           if (process === 'Receiving') {
-             totalReceiving += goodQty;
-           } else if (process === 'Ship') {
-             totalShipped += goodQty;
-             
-             // 🌟 ไนท์เพิ่มส่วนนี้ค่ะ: เอาจำนวนที่ส่ง (goodQty) * ราคาต่อชิ้น
-             let itemCode = String(row[1]).trim();
-             let itemPrice = priceMap[itemCode] || 0;
-             dailyIncome += (goodQty * itemPrice);
-             
-           } else {
-             totalProduced += goodQty;
-           }
-
-           // --- เก็บสถิติพนักงานเพื่อหาพนักงานยอดเยี่ยม/ต้องระวัง ---
-           if (employeeName !== '-') {
-             if (!empStats[employeeName]) empStats[employeeName] = { good: 0, ng: 0 };
-             empStats[employeeName].good += goodQty;
-             empStats[employeeName].ng += ngQty;
-           }
+        // เก็บสถิติพนักงาน
+        if (employeeName !== '-') {
+          if (!empStats[employeeName]) empStats[employeeName] = { good: 0, ng: 0 };
+          empStats[employeeName].good += goodQty;
+          empStats[employeeName].ng += ngQty;
         }
       }
-    }
-  }
-
-  if (todayLogText === '') {
-    console.log('⚠️ แจ้งเตือน: ไม่พบข้อมูลที่ตรงกับเงื่อนไขของวันนี้เลยค่ะ');
+    });
+  } catch (e) {
+    console.log('❌ ข้อผิดพลาดการดึงข้อมูล Log: ' + e.message);
     return;
   }
 
+  if (todayLogText === '') {
+    console.log('⚠️ แจ้งเตือน: ไม่พบข้อมูลที่ตรงกับเงื่อนไขของวันนี้ใน Supabase ค่ะ');
+    return { status: 'no_data', targetDate: targetDateString };
+  }
+
   console.log(`📌 ขั้นตอนที่ 3: พบข้อมูลทั้งหมด ${matchCount} รายการ กำลังเตรียมข้อมูลตัวเลขให้ AI...`);
-// ==========================================
-  // 🌟 ส่วนที่ 3: บันทึกยอดขายรายวัน & คำนวณยอดสะสม (เวอร์ชันแสนรู้: เพิ่มวันที่ให้อัตโนมัติ)
-  // ==========================================
-  console.log(`📌 กำลังบันทึกยอดขายและคำนวณยอดสะสมลง Sheet sumprice...`);
-  const sumpriceSheet = invSs.getSheetByName('sumprice');
-  let sumpriceData = sumpriceSheet.getDataRange().getValues();
 
-  let targetRowIndex = -1;
-  
-  // 1. ค้นหาแถวของวันที่ทำรายงานก่อนค่ะ
-  for (let r = 1; r < sumpriceData.length; r++) {
-    let cellDate = sumpriceData[r][0];
-    if (cellDate instanceof Date) {
-      let sheetDateStr = Utilities.formatDate(cellDate, timeZone, "dd/MM/yyyy");
-      if (sheetDateStr === targetDateString) {
-        targetRowIndex = r + 1; 
+  // =========================================================
+  // บันทึกยอดขายและยอดสะสมลงตาราง daily_summary (ใน Supabase)
+  // =========================================================
+  console.log(`📌 กำลังบันทึกยอดขายและยอดสะสมลง Supabase (daily_summary)...`);
+  let accumulateIncome = 0;
+
+  try {
+    // 1. ดึงสรุปยอดก่อนหน้าทั้งหมด
+    const summaryUrl = `${SUPABASE_URL}/rest/v1/daily_summary?order=date.asc`;
+    const summaryRes = UrlFetchApp.fetch(summaryUrl, { headers: headers });
+    const summaryData = JSON.parse(summaryRes.getContentText());
+
+    let previousAccumulate = 0;
+    let targetSummaryId = null;
+    const targetMonthPrefix = targetIsoDate.substring(0, 7); // e.g. "2026-09"
+
+    for (let i = 0; i < summaryData.length; i++) {
+      let r = summaryData[i];
+      let rMonthPrefix = r.date.substring(0, 7);
+
+      if (r.date === targetIsoDate) {
+        targetSummaryId = r.date;
+        if (i > 0) {
+          let prevR = summaryData[i-1];
+          if (prevR.date.substring(0, 7) === targetMonthPrefix) {
+            previousAccumulate = Number(prevR.accumulate_income) || 0;
+          } else {
+            previousAccumulate = 0; // Reset for new month
+          }
+        }
         break;
-      }
-    }
-  }
-
-  // 🌟 ถ้าหาไม่เจอ ไนท์จะทำการเพิ่มแถวใหม่ให้พี่ทันทีค่ะ!
-  if (targetRowIndex === -1) {
-    console.log(`✨ ไม่พบวันที่ ${targetDateString} ในตาราง ไนท์กำลังเพิ่มแถวใหม่ให้พี่นะคะ...`);
-    sumpriceSheet.appendRow([reportDate, 0, 0]); // เพิ่มวันที่, ยอดขาย 0, ยอดสะสม 0
-    
-    // จัดรูปแบบวันที่ในช่องใหม่ให้สวยงาม (d/M/yyyy)
-    let lastRow = sumpriceSheet.getLastRow();
-    sumpriceSheet.getRange(lastRow, 1).setNumberFormat('d/M/yyyy');
-    
-    // สั่งให้เรียงลำดับข้อมูลตามวันที่ (Column A) เผื่อมีการรันย้อนหลัง ข้อมูลจะได้ไม่กระโดดค่ะ
-    const rangeToSort = sumpriceSheet.getRange(2, 1, sumpriceSheet.getLastRow() - 1, 3);
-    rangeToSort.sort({column: 1, ascending: true});
-    
-    // หลังจากเพิ่มและเรียงแล้ว ให้หาแถวใหม่อีกครั้งเพื่อความเป๊ะค่ะ
-    const refreshedData = sumpriceSheet.getDataRange().getValues();
-    for (let r = 1; r < refreshedData.length; r++) {
-      let cellDate = refreshedData[r][0];
-      if (cellDate instanceof Date) {
-        let sheetDateStr = Utilities.formatDate(cellDate, timeZone, "dd/MM/yyyy");
-        if (sheetDateStr === targetDateString) {
-          targetRowIndex = r + 1;
-          break;
+      } else if (r.date < targetIsoDate) {
+        if (rMonthPrefix === targetMonthPrefix) {
+          previousAccumulate = Number(r.accumulate_income) || 0;
+        } else {
+          previousAccumulate = 0; // Reset for new month
         }
       }
     }
-  }
 
-  // 2. เมื่อได้แถวที่ถูกต้องแล้ว (ไม่ว่าจะหาเจอเดิมหรือเพิ่มใหม่) ก็ทำการบันทึกยอดเลยค่ะ
-  if (targetRowIndex !== -1) {
-    sumpriceSheet.getRange(targetRowIndex, 2).setValue(dailyIncome);
+    accumulateIncome = previousAccumulate + dailyIncome;
 
-    // 3. คำนวณยอดสะสมใหม่ของเดือนนี้
-    let currentMonth = reportDate.getMonth();
-    let currentYear = reportDate.getFullYear();
-    let sumMonth = 0;
-
-    const updatedData = sumpriceSheet.getRange(2, 1, sumpriceSheet.getLastRow() - 1, 2).getValues();
-    for (let i = 0; i < updatedData.length; i++) {
-      let rDate = updatedData[i][0];
-      if (rDate instanceof Date && rDate.getMonth() === currentMonth && rDate.getFullYear() === currentYear) {
-        let rIncome = Number(updatedData[i][1]) || 0;
-        sumMonth += rIncome;
-        
-        sumpriceSheet.getRange(i + 2, 3).setValue(sumMonth); 
-        
-        if (i + 2 === targetRowIndex) {
-          accumulateIncome = sumMonth; 
-        }
-      }
+    if (targetSummaryId) {
+      // อัปเดตข้อมูลที่มีอยู่แล้ว
+      const updateUrl = `${SUPABASE_URL}/rest/v1/daily_summary?date=eq.${targetSummaryId}`;
+      UrlFetchApp.fetch(updateUrl, {
+        method: 'PATCH',
+        headers: headers,
+        payload: JSON.stringify({ daily_income: dailyIncome, accumulate_income: accumulateIncome })
+      });
+    } else {
+      // สร้างข้อมูลวันใหม่
+      const insertUrl = `${SUPABASE_URL}/rest/v1/daily_summary`;
+      UrlFetchApp.fetch(insertUrl, {
+        method: 'POST',
+        headers: headers,
+        payload: JSON.stringify({ date: targetIsoDate, daily_income: dailyIncome, accumulate_income: accumulateIncome })
+      });
     }
+  } catch (e) {
+    console.log('⚠️ ไม่สามารถอัปเดตยอดสะสมได้: ' + e.message);
   }
-  // ==========================================
-  // --- สรุปหาคนเก่งและคนที่ต้องระวัง ---
+
+  // =========================================================
+  // คำนวณพนักงานยอดเยี่ยม / ระวังตัว
+  // =========================================================
   let bestEmp = { name: '-', good: -1 };
-  let maxNg = 0;
-  let badEmps = [];
+  let watchEmpList = [];
 
-  for (let name in empStats) {
-    let st = empStats[name];
-    if (st.ng === 0 && st.good > bestEmp.good) {
-      bestEmp = { name: name, good: st.good };
+  for (let emp in empStats) {
+    let stat = empStats[emp];
+    if (stat.good > bestEmp.good) {
+      bestEmp.name = emp;
+      bestEmp.good = stat.good;
     }
-    if (st.ng > 0) {
-      if (st.ng > maxNg) {
-        maxNg = st.ng;
-        badEmps = [name];
-      } else if (st.ng === maxNg) {
-        badEmps.push(name);
-      }
+    if (stat.ng > 0) {
+      watchEmpList.push(`${emp} (NG = ${stat.ng} ชิ้น)`);
     }
   }
-
-  let watchEmployeeText = '';
-  if (maxNg > 0) {
-    watchEmployeeText = `${badEmps.join(', ')} มียอดของเสียรวม ${maxNg} ชิ้น`;
-  } else {
-    watchEmployeeText = 'ไม่มีพนักงานที่ทำของเสียเลยในวันนี้ค่ะ ยอดเยี่ยมมาก!';
+  let watchEmployeeText = watchEmpList.length > 0 ? watchEmpList.join(', ') : 'ไม่มีพนักงานที่ทำของเสีย (ยอดเยี่ยมทุกคนค่ะ!)';
+  if (bestEmp.good === -1) {
+    bestEmp = { name: 'ไม่มีพนักงานที่ได้ยอดผลิตเลย', good: 0 };
   }
 
-  if (bestEmp.name === '-') {
-    bestEmp.name = 'ไม่มีพนักงานที่เข้าเงื่อนไข (ทุกคนมีของเสีย)';
-    bestEmp.good = 0;
-  }
+  // =========================================================
+  // สร้าง Prompt สำหรับ AI
+  // =========================================================
+  const prompt = `
+  คุณคือ AI ช่วยสร้าง HTML สรุปรายงานการผลิตประจำวันของบริษัท S Metal Tech
 
-  // --- กำหนด Prompt โดยโยนตัวเลขที่แม่นยำของเราให้ AI พูดตาม ---
-  const prompt = `นี่คือข้อมูลการผลิตประจำวันที่ ${targetDateString}:\n${todayLogText}\n\n
-  หน้าที่ของคุณ: สรุปข้อมูลเป็นภาษาไทยให้ผู้บริหาร โดยส่งผลลัพธ์เป็นโครงสร้าง HTML\n
-  กำหนดให้มีหัวข้อใหญ่ด้านบนสุดของรายงานเขียนว่า: "<h2 style="font-size: 18px; margin-bottom: 12px; margin-top: 0;">สรุปข้อมูลการผลิต Part MA ประจำวันที่ ${targetDateString}</h2>"\n
-  **ข้อควรระวังสำคัญ:** ห้ามใช้ <link> หรือ <style> เด็ดขาด ให้ใช้การตกแต่งแบบ Inline CSS (style="...") ในทุก Tag เท่านั้น (ใช้โทนสีและสไตล์คล้ายคลึงกับ Tailwind CSS)\n\n
-  การจัดรูปแบบ UI ให้สวยงาม ทันสมัย เป็นระเบียบ และรองรับหน้าจอมือถือ:\n
-  1. ให้สร้าง <div style="width: 100%;"> คลุมตารางเอาไว้ และสร้าง <table style="width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 11px; color: #374151; font-family: Tahoma, sans-serif;"> **เพียง 1 ตารางหลักเท่านั้น**\n
-  2. หัวตาราง (th) ให้อยู่แถวแรกสุด มี 4 คอลัมน์ และปรับพื้นที่ให้สวยงาม ดังนี้:\n
-      - <th style="width: 35%; background-color: #f3f4f6; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; text-align: left; font-weight: 600; font-size: 11px;">Item (Name Part)</th>\n
-      - <th style="width: 15%; background-color: #f3f4f6; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; text-align: center; font-weight: 600; font-size: 11px; white-space: nowrap;">งานดี</th>\n
-      - <th style="width: 15%; background-color: #f3f4f6; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; text-align: center; font-weight: 600; font-size: 11px; white-space: nowrap;">NG</th>\n
-      - <th style="width: 35%; background-color: #f3f4f6; padding: 10px 8px; border-bottom: 2px solid #e5e7eb; text-align: left; font-weight: 600; font-size: 11px;">พนักงาน</th>\n
-  3. **การแบ่งกลุ่ม Process:** ห้ามสร้างตารางใหม่ ให้ใช้แทรกแถวคั่นกลางตาราง โดยใช้ <tr style="background-color: #e5e7eb;"><td colspan="4" style="padding: 10px 8px; font-weight: bold; font-size: 14px; color: #1f2937;">Process: [ชื่อ Process]</td></tr>\n
-  4. **สำคัญมาก: ข้อมูลในตาราง (td) บังคับว่า 1 แถว (tr) จะต้องมี 4 คอลัมน์ (td) เสมอ** ได้แก่ Item, งานดี, NG, และพนักงาน ห้ามข้ามหรือยุบรวมคอลัมน์เด็ดขาด! (ต่อให้ข้อมูล NG จะเป็น 0 ก็ต้องสร้าง <td> ให้มันด้วย) โดยจัดให้อยู่ตำแหน่งเดียวกับหัวตาราง และใช้ (style="padding: 10px 8px; border-bottom: 1px solid #e5e7eb; word-break: break-word; font-size: 11px;")\n\n
-  เงื่อนไขการจัดเนื้อหา:\n
-  1. ระบุ "Name Part" ต่อท้ายชื่อ Item เสมอ\n
-  2. **การเรียงลำดับ Process:** ให้แสดงผลโดยเรียงลำดับ Process ตามนี้อย่างเคร่งครัด (ถ้า Process ไหนไม่มีงานในวันนั้น ไม่ต้องโชว์แถวคั่นของ Process นั้น):\n
-      ลำดับที่ 1: Process Receiving\n
-      ลำดับที่ 2: Process Cutting\n
-      ลำดับที่ 3: Process Milling\n
-      ลำดับที่ 4: Process CNC\n
-      ลำดับที่ 5: Process Grinding\n
-      ลำดับที่ 6: Process Finished Goods\n
-      ลำดับที่ 7: Process Ship\n
-  3. ส่วนท้าย "สรุปภาพรวมประจำวัน" ให้อยู่นอกตารางหลัก โดยจัดรูปแบบให้อ่านง่ายบนจอมือถือ ดังนี้:\n
-      - ให้นำเนื้อหาสรุปทั้งหมดไปใส่ในกรอบ <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0; font-family: Tahoma, sans-serif; font-size: 13px;">\n
-      - หัวข้อให้ใช้ <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 15px; color: #1e293b;">สรุปภาพรวมประจำวัน</h3>\n
-      - ข้อมูลสรุปแต่ละข้อ **บังคับให้ใช้แท็ก <ul style="margin: 0; padding-left: 20px;"> และ <li style="margin-bottom: 8px; line-height: 1.5; word-wrap: break-word;">...</li>** เพื่อที่เวลาข้อความยาวจนตกบรรทัด มันจะจัดย่อหน้าให้เป็นระเบียบ\n
-  4. ใช้สีเขียวสำหรับตัวเลข NG เป็น 0 และใช้สีแดงสำหรับรายการที่มี NG\n\n
-  ⚠️ **ข้อมูลส่วนสรุปภาพรวมประจำวัน (สำคัญมาก: ห้ามบวกเลขเอง ให้คัดลอกข้อความด้านล่างนี้ไปใส่ใน <li> ได้เลยเพื่อความถูกต้อง 100%)**:\n
-  - <span style="font-weight: bold; color: #000;">ยอดรับ Raw Material (Process: Receiving): ${totalReceiving} ชิ้น</span>\n
-  - <span style="font-weight: bold; color: #000;">ยอดรวมการผลิตสินค้าสำเร็จรูปประจำวัน: ${totalProduced} ชิ้น</span>\n
-  - <span style="font-weight: bold; color: #000;">ยอดรวมสินค้าที่จัดส่ง (Process: Ship): ${totalShipped} ชิ้น</span>\n
-  - <span style="font-weight: bold; color: #000;">ยอดขายประจำวัน: ${dailyIncome.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>\n
-  - <span style="font-weight: bold; color: #000;">ยอดขายรวม (Total Income): ${accumulateIncome.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>\n
-  - พนักงานยอดเยี่ยม: <span style="font-weight: bold; color: #1d4ed8;">${bestEmp.name} ด้วยยอดงานดีรวม ${bestEmp.good} ชิ้น</span>\n
+  นี่คือข้อมูลดิบประจำวันที่ ${targetDateString}:
+  ${todayLogText}
+
+  เงื่อนไขการสร้างอีเมลรายงาน (ห้ามทำนอกเหนือคำสั่งเด็ดขาด):
+  1. ห้ามเขียนคำทักทาย ห้ามแนะนำตัว ห้ามเขียนคำลงท้ายใดๆ ทั้งสิ้น ให้ตอบกลับมาเป็นโค้ด HTML เท่านั้น
+  2. บรรทัดแรกสุดของรายงาน (ก่อนตาราง) ให้เขียนประโยคนี้ตรงๆ โดยไม่มีข้อความอื่น:
+     <div style="font-family: Tahoma, sans-serif; font-size: 15px; font-weight: bold; color: #1e3c72; margin-bottom: 12px;">สรุปข้อมูลการผลิต Part MA ประจำวันที่ ${targetDateString}</div>
+  3. รูปแบบตาราง (Scrollable บนมือถือ): ห้ามบีบตารางให้พอดีจอ เพื่อป้องกันชื่อพนักงานตกบรรทัด ให้ครอบตารางด้วย div สำหรับเลื่อนแนวนอน:
+     <div style="overflow-x: auto;">
+       <table style="width: 100%; min-width: 650px; border-collapse: collapse; font-family: Tahoma, sans-serif; font-size: 13px; white-space: nowrap;">
+  4. โครงสร้างคอลัมน์: ให้มีแค่ 4 คอลัมน์ คือ "รายการสินค้า", "พนักงาน", "งานดี (ชิ้น)", "NG (ชิ้น)"
+     (กำหนดหัวคอลัมน์ <th> ด้วยพื้นหลังสี #f1f5f9 และตีกรอบเส้น 1px solid #ddd)
+  5. การจัดกลุ่มตาม Process (ตามแบบฟอร์มใหม่): ให้แบ่งกลุ่มข้อมูลตาม Process โดยใช้แถว <tr> คั่นเป็นหัวข้อ เช่น:
+     <tr><td colspan="4" style="background-color: #e2e8f0; font-weight: bold; padding: 10px; font-size: 14px; border: 1px solid #ddd;">Process: Milling</td></tr>
+     โดยเรียงลำดับ Process ตามนี้: Receiving, Cutting, Milling, CNC, Grinding, Finished Goods, Ship
+  6. ในช่อง "รายการสินค้า" ให้นำ รหัสสินค้า และ ชื่อสินค้า มาต่อกัน เช่น "B12424A (DRAIN SHUTTER(AFC))"
+  7. ภายใน <td> ให้ตีกรอบเส้น #ddd และใช้สีเขียวสำหรับตัวเลข NG เป็น 0 และสีแดงสำหรับเลขที่มี NG
+  8. ส่วนท้าย "สรุปภาพรวมประจำวัน" ให้อยู่นอกตารางหลักและอยู่ด้านล่างสุด โดยใส่ในกรอบ:
+      <div style="background-color: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 20px; border: 1px solid #e2e8f0; font-family: Tahoma, sans-serif; font-size: 13px; max-width: 850px; white-space: normal;">
+      - หัวข้อ: <h3 style="margin-top: 0; margin-bottom: 12px; font-size: 14px; color: #1e293b;">สรุปภาพรวมประจำวัน</h3>
+      - ข้อมูลสรุปแต่ละข้อใช้แท็ก <ul style="margin: 0; padding-left: 20px;"> และ <li style="margin-bottom: 8px;">
+
+  ⚠️ **ข้อมูลส่วนสรุปภาพรวมประจำวัน (ให้คัดลอกข้อความด้านล่างนี้ไปใส่ใน <li> ได้เลยโดยไม่ต้องคิดเลขใหม่)**:
+  - <span style="font-weight: bold; color: #000;">ยอดรับ Raw Material (Process: Receiving): ${totalReceiving} ชิ้น</span>
+  - <span style="font-weight: bold; color: #000;">ยอดรวมการผลิตสินค้าสำเร็จรูปประจำวัน: ${totalProduced} ชิ้น</span>
+  - <span style="font-weight: bold; color: #000;">ยอดรวมสินค้าที่จัดส่ง (Process: Ship): ${totalShipped} ชิ้น</span>
+  - <span style="font-weight: bold; color: #000;">ยอดขายประจำวัน: ${dailyIncome.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>
+  - <span style="font-weight: bold; color: #000;">ยอดขายรวม (Total Income): ${accumulateIncome.toLocaleString('th-TH', {minimumFractionDigits: 2, maximumFractionDigits: 2})} บาท</span>
+  - พนักงานยอดเยี่ยม: <span style="font-weight: bold; color: #1d4ed8;">${bestEmp.name} ด้วยยอดงานดีรวม ${bestEmp.good} ชิ้น</span>
   - พนักงานที่ต้องเฝ้าสังเกต: <span style="font-weight: bold; color: #b91c1c;">${watchEmployeeText}</span>`;
 
   const geminiResponse = callGemini(prompt);
 
   if (geminiResponse) {
     console.log('📌 ขั้นตอนที่ 4: AI ประมวลผลสำเร็จ! กำลังทำการส่งอีเมล...');
-    const subject = `📊 สรุปรายงานการผลิต Part MA ประจำวันที่ ${targetDateString}`;
-    sendToEmail(subject, geminiResponse);
+    const subject = isRevise ? `📊 (Revise) สรุปรายงานการผลิต Part MA ประจำวันที่ ${targetDateString}` : `📊 สรุปรายงานการผลิต Part MA ประจำวันที่ ${targetDateString}`;
+    sendToEmail(subject, geminiResponse, recipients);
+    return {
+      status: 'success',
+      targetDate: targetDateString,
+      recipients: recipients,
+      isRevise: isRevise,
+      isTestOnly: isTestOnly
+    };
   } else {
     console.log('❌ ข้อผิดพลาดร้ายแรง: ไม่สามารถสร้างอีเมลได้ เนื่องจาก AI ไม่ตอบสนองค่ะ');
+    throw new Error('ไม่สามารถสร้างอีเมลได้ เนื่องจาก AI ไม่ตอบสนองค่ะ พี่ต้นลองตรวจสอบ API Key หรือลองกดส่งใหม่อีกครั้งนะคะ');
   }
 }
 
 // ---------------------------------------------------------------------
 function callGemini(promptText) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${AI_CONFIG.GEMINI_API_KEY}`;
-  
-  const payload = { "contents": [{ "parts": [{ "text": promptText }] }] };
+  const primaryModel = (AI_CONFIG.MODEL_NAME || 'gemini-2.5-flash').trim();
+  const fallbackModel = (AI_CONFIG.FALLBACK_MODEL_NAME || 'gemini-3.5-flash').trim();
+
+  console.log(`🤖 กำลังส่ง Prompt ให้ AI โมเดลหลัก (${primaryModel})...`);
+  let result = requestGeminiApi(primaryModel, promptText);
+  if (result) return result;
+
+  if (fallbackModel && fallbackModel !== primaryModel) {
+    console.log(`⚠️ โมเดลหลัก (${primaryModel}) ไม่ตอบสนองหรือขัดข้อง! กำลังสลับไปใช้โมเดลสำรองอัตโนมัติ: ${fallbackModel}...`);
+    result = requestGeminiApi(fallbackModel, promptText, { temperature: 0.1 });
+    if (result) {
+      console.log(`✅ โมเดลสำรอง (${fallbackModel}) ประมวลผลสำเร็จและส่งรายงานต่อเนื่องเรียบร้อยค่ะ!`);
+      return result;
+    }
+  }
+
+  console.log('❌ เชื่อมต่อ AI ล้มเหลวทั้งโมเดลหลักและโมเดลสำรองค่ะ');
+  return null;
+}
+
+function requestGeminiApi(modelName, promptText, customConfig) {
+  const apiKey = AI_CONFIG.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.log('❌ ไม่พบคีย์ GEMINI_API_KEY ใน Script Properties');
+    return null;
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const payload = {
+    "contents": [{ "parts": [{ "text": promptText }] }]
+  };
+  if (customConfig && typeof customConfig === 'object') {
+    payload.generationConfig = customConfig;
+  }
+
   const options = {
     'method': 'post',
     'contentType': 'application/json',
     'payload': JSON.stringify(payload),
-    'muteHttpExceptions': true 
+    'muteHttpExceptions': true
   };
 
   let maxRetries = 3;
   let attempt = 0;
 
-  while (attempt < maxRetries) {
+  while (attempt <= maxRetries) {
     try {
       const response = UrlFetchApp.fetch(url, options);
       const responseCode = response.getResponseCode();
-      
+      const contentText = response.getContentText();
+
       if (responseCode === 200) {
-        const json = JSON.parse(response.getContentText());
-        let resultText = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+        const json = JSON.parse(contentText);
+        const parts = json?.candidates?.[0]?.content?.parts || [];
+        const answerParts = parts.filter(p => !p.thought && p.text);
+        const resultText = (answerParts.length > 0 ? answerParts : parts)
+          .map(p => p.text || '')
+          .join('');
+
         if (!resultText) {
-          console.log('⚠️ แจ้งเตือน: AI ทำงานสำเร็จ แต่ส่งข้อความว่างเปล่ากลับมาค่ะ');
+          console.log(`⚠️ โมเดล ${modelName} ตอบกลับสำเร็จแต่ส่งข้อความว่างเปล่าค่ะ`);
           return null;
         }
-        
-        // ใช้คำสั่งตัดโค้ดออกที่ปลอดภัยที่สุด
-        resultText = resultText.split('```html').join('');
-        resultText = resultText.split('```').join('');
-        return resultText;
-        
+        return cleanAiHtmlOutput(resultText);
       } else if (responseCode === 503 || responseCode === 429) {
         attempt++;
-        console.log(`⏳ คิว AI แน่น หรือเรียกใช้งานถี่เกินไป กำลังลองใหม่ครั้งที่ ${attempt}/3 ...`);
-        Utilities.sleep(3000 * attempt); 
+        if (attempt <= maxRetries) {
+          console.log(`⏳ โมเดล ${modelName} คิวแน่น (HTTP ${responseCode}) กำลังลองใหม่ครั้งที่ ${attempt}/${maxRetries} (รอ ${3 * attempt} วินาที)... ${contentText ? '(' + contentText.slice(0, 100) + ')' : ''}`);
+          Utilities.sleep(3000 * attempt);
+        } else {
+          console.log(`❌ โมเดล ${modelName} ไม่สามารถตอบกลับได้หลังลองครบ ${maxRetries} ครั้ง`);
+          console.log(`รายละเอียด Error จาก AI: ${contentText}`);
+          return null;
+        }
       } else {
-        console.log(`❌ AI ขัดข้อง (รหัส Error: ${responseCode})`);
-        console.log(`รายละเอียด Error จาก AI: ${response.getContentText()}`);
+        console.log(`❌ โมเดล ${modelName} เกิดข้อผิดพลาด (HTTP ${responseCode}): ${contentText}`);
         return null;
       }
-    } catch (e) { 
-      console.log(`❌ ระบบเครือข่ายมีปัญหา: ${e.message}`);
-      return null; 
+    } catch (e) {
+      console.log(`❌ เครือข่ายมีปัญหาขณะเรียก ${modelName}: ${e.message}`);
+      return null;
     }
   }
-  console.log('❌ เชื่อมต่อ AI ล้มเหลวครบ 3 ครั้ง ระบบขอยกเลิกการทำงานค่ะ พี่ลองตรวจสอบ API Key ดูอีกครั้งนะคะ');
   return null;
 }
 
+function cleanAiHtmlOutput(rawText) {
+  if (!rawText) return '';
+  let cleaned = String(rawText);
+  cleaned = cleaned.replace(/<thought[\s\S]*?<\/thought>/gi, '');
+  cleaned = cleaned.replace(/<think[\s\S]*?<\/think>/gi, '');
+  cleaned = cleaned.replace(/```[a-zA-Z]*/g, '');
+  cleaned = cleaned.replace(/```/g, '');
+  return cleaned.trim();
+}
+
 // ---------------------------------------------------------------------
-function sendToEmail(subject, message) {
+function sendToEmail(subject, message, recipients) {
+  const targetRecipients = (recipients && recipients.length > 0) ? recipients : AI_CONFIG.REPORT_EMAILS;
   try {
     const htmlBody = `
       <!DOCTYPE html>
@@ -869,14 +963,16 @@ function sendToEmail(subject, message) {
     `;
 
     MailApp.sendEmail({
-      to: AI_CONFIG.REPORT_EMAILS.join(','), 
+      to: targetRecipients.join(','),
       name: AI_CONFIG.SENDER_NAME || 'Daily Report Part MA',
       subject: subject,
       htmlBody: htmlBody
     });
-    console.log('✅ ส่งรายงานไปยังอีเมลเรียบร้อยแล้วค่ะ!');
-  } catch(e) { 
-    console.log('❌ ส่งเมลล้มเหลว: ' + e.message); 
+    console.log('✅ ส่งรายงานไปยังอีเมลเรียบร้อยแล้วค่ะ! ผู้รับ: ' + targetRecipients.join(', '));
+    return true;
+  } catch(e) {
+    console.log('❌ ส่งเมลล้มเหลว: ' + e.message);
+    throw new Error('ส่งอีเมลไม่สำเร็จ: ' + e.message);
   }
 }
 

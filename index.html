@@ -3015,12 +3015,28 @@
             <div class="p-2 mb-3" style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px;">
               <div class="d-flex justify-content-between align-items-center">
                 <span class="badge badge-primary font-weight-bold" id="edit-log-badge-item" style="font-size:0.9rem;">ITEM</span>
-                <span class="badge badge-secondary" id="edit-log-badge-process">Process</span>
+                <span class="badge badge-secondary" id="edit-log-menu-text" style="font-size:0.8rem;">เมนู: -</span>
               </div>
               <div class="small text-dark font-weight-bold mt-1" id="edit-log-namepart">-</div>
-              <div class="small text-muted d-flex justify-content-between mt-1">
-                <span id="edit-log-menu-text">เมนู: -</span>
-                <span id="edit-log-employee">โดย: -</span>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group col-12 col-md-6 mb-2">
+                <label class="small font-weight-bold text-dark mb-1"><i class="bi bi-gear-wide-connected text-primary"></i> Process (กระบวนการ)</label>
+                <select id="edit-log-select-process" class="form-control font-weight-bold text-dark" style="min-height:44px;">
+                  <option value="Receiving">Receiving</option>
+                  <option value="Cutting">Cutting</option>
+                  <option value="Milling">Milling</option>
+                  <option value="CNC">CNC</option>
+                  <option value="Grinding">Grinding</option>
+                  <option value="Finished Goods">Finished Goods</option>
+                  <option value="Ship">Ship</option>
+                </select>
+              </div>
+              <div class="form-group col-12 col-md-6 mb-2">
+                <label class="small font-weight-bold text-dark mb-1"><i class="bi bi-person-fill text-primary"></i> ผู้ปฏิบัติงาน (ชื่อพนักงาน)</label>
+                <input id="edit-log-input-employee" type="text" list="edit-log-employee-list" class="form-control" placeholder="ระบุชื่อพนักงาน" style="min-height:44px;" autocomplete="off">
+                <datalist id="edit-log-employee-list"></datalist>
               </div>
             </div>
 
@@ -3443,7 +3459,7 @@
       } catch (err) { _failure(err); }
     };
 
-    runner.updateProductionLog = async function(logId, newGood, newNg, newTimestamp) {
+    runner.updateProductionLog = async function(logId, newGood, newNg, newTimestamp, newProcess, newEmployee) {
       try {
         const { data: log, error: logErr } = await sb.from('production_logs').select('*').eq('id', logId).single();
         if (logErr || !log) throw new Error('ไม่พบรายการ Log ที่ต้องการแก้ไข');
@@ -3452,50 +3468,98 @@
         const oldNg = Number(log.ng_qty || 0);
         const oldTime = log.timestamp;
         const itemCode = log.item;
-        const procName = String(log.process || '').trim();
+        const oldProcName = String(log.process || '').trim();
+        const newProcName = newProcess ? String(newProcess).trim() : oldProcName;
+        const empName = (newEmployee !== undefined && newEmployee !== null) ? String(newEmployee).trim() : String(log.employee_name || '').trim();
         const menuName = String(log.menu || '').trim();
+
+        const oldProcNorm = normU(oldProcName);
+        const newProcNorm = normU(newProcName);
+        const procChanged = (oldProcNorm !== newProcNorm);
+
+        const oldIsShip = (oldProcNorm === 'SHIP' || menuName === 'ส่งสินค้า');
+        const newIsShip = (newProcNorm === 'SHIP');
+
+        const oldIsFinish = (menuName === 'เสร็จการทำงาน' || oldProcNorm === 'RECEIVING' || ['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS','FINISHED_GOODS'].includes(oldProcNorm));
+        const newIsFinish = (menuName === 'เสร็จการทำงาน' || newProcNorm === 'RECEIVING' || ['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS','FINISHED_GOODS'].includes(newProcNorm));
+
+        const procFieldMap = {
+          'RECEIVING': 'receiving',
+          'CUTTING': 'cutting',
+          'MILLING': 'milling',
+          'CNC': 'cnc',
+          'GRINDING': 'grinding',
+          'FINISH_GOODS': 'finished_goods',
+          'FINISHED_GOODS': 'finished_goods'
+        };
 
         const diffGood = newGood - oldGood;
         const diffNg = newNg - oldNg;
         const newTotalQty = newGood + newNg;
 
-        // 1. Update Inventory Stock according to Delta
+        // 1. Update Inventory Stock
         const { data: inv } = await sb.from('inventory').select('*').eq('item', itemCode).maybeSingle();
         if (inv) {
           const invUpdates = {};
           let shouldUpdateInv = false;
 
-          const procNorm = normU(procName);
-          const isShip = (procNorm === 'SHIP' || menuName === 'ส่งสินค้า');
-          const isFinish = (menuName === 'เสร็จการทำงาน' || procNorm === 'RECEIVING' || ['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS','FINISHED_GOODS'].includes(procNorm));
-
-          if (isShip) {
-            // Ship reduces Finished Goods. If newGood is bigger, reduce FG more. If smaller, restore FG.
-            if (diffGood !== 0) {
+          if (!procChanged) {
+            // กรณี Process เดิม: ปรับตาม Delta ของจำนวน
+            if (oldIsShip) {
+              if (diffGood !== 0) {
+                const currentFg = Number(inv.finished_goods || 0);
+                invUpdates.finished_goods = Math.max(0, currentFg - diffGood);
+                shouldUpdateInv = true;
+              }
+            } else if (oldIsFinish) {
+              const destField = procFieldMap[oldProcNorm];
+              if (destField && diffGood !== 0) {
+                const currentVal = Number(inv[destField] || 0);
+                invUpdates[destField] = Math.max(0, currentVal + diffGood);
+                shouldUpdateInv = true;
+              }
+              if (diffNg !== 0) {
+                const currentNg = Number(inv.ng || 0);
+                invUpdates.ng = Math.max(0, currentNg + diffNg);
+                shouldUpdateInv = true;
+              }
+            }
+          } else {
+            // กรณี Process เปลี่ยน: คืนสต็อก Process เก่า และเพิ่มสต็อก Process ใหม่
+            if (oldIsShip) {
               const currentFg = Number(inv.finished_goods || 0);
-              invUpdates.finished_goods = Math.max(0, currentFg - diffGood);
+              invUpdates.finished_goods = currentFg + oldGood;
               shouldUpdateInv = true;
+            } else if (oldIsFinish) {
+              const oldField = procFieldMap[oldProcNorm];
+              if (oldField) {
+                const currentVal = Number(inv[oldField] || 0);
+                invUpdates[oldField] = Math.max(0, currentVal - oldGood);
+                shouldUpdateInv = true;
+              }
+              if (oldNg !== 0) {
+                const currentNg = Number(inv.ng || 0);
+                invUpdates.ng = Math.max(0, currentNg - oldNg);
+                shouldUpdateInv = true;
+              }
             }
-          } else if (isFinish) {
-            const procFieldMap = {
-              'RECEIVING': 'receiving',
-              'CUTTING': 'cutting',
-              'MILLING': 'milling',
-              'CNC': 'cnc',
-              'GRINDING': 'grinding',
-              'FINISH_GOODS': 'finished_goods',
-              'FINISHED_GOODS': 'finished_goods'
-            };
-            const destField = procFieldMap[procNorm];
-            if (destField && diffGood !== 0) {
-              const currentVal = Number(inv[destField] || 0);
-              invUpdates[destField] = Math.max(0, currentVal + diffGood);
+
+            if (newIsShip) {
+              const baseFg = invUpdates.finished_goods !== undefined ? invUpdates.finished_goods : Number(inv.finished_goods || 0);
+              invUpdates.finished_goods = Math.max(0, baseFg - newGood);
               shouldUpdateInv = true;
-            }
-            if (diffNg !== 0) {
-              const currentNg = Number(inv.ng || 0);
-              invUpdates.ng = Math.max(0, currentNg + diffNg);
-              shouldUpdateInv = true;
+            } else if (newIsFinish) {
+              const newField = procFieldMap[newProcNorm];
+              if (newField) {
+                const baseVal = invUpdates[newField] !== undefined ? invUpdates[newField] : Number(inv[newField] || 0);
+                invUpdates[newField] = Math.max(0, baseVal + newGood);
+                shouldUpdateInv = true;
+              }
+              if (newNg !== 0) {
+                const baseNg = invUpdates.ng !== undefined ? invUpdates.ng : Number(inv.ng || 0);
+                invUpdates.ng = Math.max(0, baseNg + newNg);
+                shouldUpdateInv = true;
+              }
             }
           }
 
@@ -3510,44 +3574,69 @@
             await sb.from('inventory').update(invUpdates).eq('id', inv.id);
           }
 
-          // 2. If it's a Ship transaction, update daily_summary
-          if (isShip) {
-            const itemPrice = Number(inv.price || 0);
-            const oldAmount = oldGood * itemPrice;
-            const newAmount = newGood * itemPrice;
-            const diffAmount = newAmount - oldAmount;
+          // 2. จัดการยอดขายและยอดสะสม daily_summary
+          const itemPrice = Number(inv.price || 0);
+          const oldAmount = oldGood * itemPrice;
+          const newAmount = newGood * itemPrice;
 
-            const oldDateStr = toBangkokDateStr(oldTime);
-            const newDateStr = toBangkokDateStr(newTimestamp);
+          const oldDateStr = toBangkokDateStr(oldTime);
+          const newDateStr = toBangkokDateStr(newTimestamp);
 
-            if (oldDateStr && newDateStr && oldDateStr === newDateStr) {
-              if (diffAmount !== 0) {
-                const { data: ds } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
-                if (ds) {
-                  const newDaily = Math.max(0, (Number(ds.daily_income || 0)) + diffAmount);
+          if (!procChanged) {
+            if (oldIsShip) {
+              const diffAmount = newAmount - oldAmount;
+              if (oldDateStr && newDateStr && oldDateStr === newDateStr) {
+                if (diffAmount !== 0) {
+                  const { data: ds } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
+                  if (ds) {
+                    const newDaily = Math.max(0, (Number(ds.daily_income || 0)) + diffAmount);
+                    await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
+                  } else {
+                    await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
+                  }
+                  await recalculateMonthAccumulate(newDateStr.substring(0, 7));
+                }
+              } else if (oldDateStr && newDateStr && oldDateStr !== newDateStr) {
+                const { data: oldDs } = await sb.from('daily_summary').select('*').eq('date', oldDateStr).maybeSingle();
+                if (oldDs) {
+                  const newDaily = Math.max(0, (Number(oldDs.daily_income || 0)) - oldAmount);
+                  await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', oldDateStr);
+                }
+                const { data: newDs } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
+                if (newDs) {
+                  const newDaily = Math.max(0, (Number(newDs.daily_income || 0)) + newAmount);
                   await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
                 } else {
                   await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
                 }
-                await recalculateMonthAccumulate(newDateStr.substring(0, 7));
+                await recalculateMonthAccumulate(oldDateStr.substring(0, 7));
+                if (newDateStr.substring(0, 7) !== oldDateStr.substring(0, 7)) {
+                  await recalculateMonthAccumulate(newDateStr.substring(0, 7));
+                }
               }
-            } else if (oldDateStr && newDateStr && oldDateStr !== newDateStr) {
-              // Deduct from old date
-              const { data: oldDs } = await sb.from('daily_summary').select('*').eq('date', oldDateStr).maybeSingle();
-              if (oldDs) {
-                const newDaily = Math.max(0, (Number(oldDs.daily_income || 0)) - oldAmount);
-                await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', oldDateStr);
+            }
+          } else {
+            // เมื่อเปลี่ยน Process:
+            if (oldIsShip && !newIsShip) {
+              // ยกเลิกยอดขายเดิม
+              if (oldDateStr) {
+                const { data: oldDs } = await sb.from('daily_summary').select('*').eq('date', oldDateStr).maybeSingle();
+                if (oldDs) {
+                  const newDaily = Math.max(0, (Number(oldDs.daily_income || 0)) - oldAmount);
+                  await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', oldDateStr);
+                  await recalculateMonthAccumulate(oldDateStr.substring(0, 7));
+                }
               }
-              // Add to new date
-              const { data: newDs } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
-              if (newDs) {
-                const newDaily = Math.max(0, (Number(newDs.daily_income || 0)) + newAmount);
-                await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
-              } else {
-                await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
-              }
-              await recalculateMonthAccumulate(oldDateStr.substring(0, 7));
-              if (newDateStr.substring(0, 7) !== oldDateStr.substring(0, 7)) {
+            } else if (!oldIsShip && newIsShip) {
+              // เพิ่มยอดขายใหม่
+              if (newDateStr) {
+                const { data: newDs } = await sb.from('daily_summary').select('*').eq('date', newDateStr).maybeSingle();
+                if (newDs) {
+                  const newDaily = Math.max(0, (Number(newDs.daily_income || 0)) + newAmount);
+                  await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', newDateStr);
+                } else {
+                  await sb.from('daily_summary').insert({ date: newDateStr, daily_income: Math.max(0, newAmount), accumulate_income: Math.max(0, newAmount) });
+                }
                 await recalculateMonthAccumulate(newDateStr.substring(0, 7));
               }
             }
@@ -3555,13 +3644,20 @@
         }
 
         // 3. Update the production log itself
-        const { error: updLogErr } = await sb.from('production_logs').update({
+        const logUpdates = {
           good_qty: newGood,
           ng_qty: newNg,
           total_qty: newTotalQty,
+          process: newProcName,
+          employee_name: empName,
           timestamp: new Date(newTimestamp).toISOString()
-        }).eq('id', logId);
+        };
+        if (procChanged) {
+          if (newIsShip) logUpdates.menu = 'ส่งสินค้า';
+          else if (oldIsShip) logUpdates.menu = 'เสร็จการทำงาน';
+        }
 
+        const { error: updLogErr } = await sb.from('production_logs').update(logUpdates).eq('id', logId);
         if (updLogErr) throw updLogErr;
 
         _success({ ok: true, message: 'แก้ไขประวัติการผลิตและอัปเดตสต็อก/ยอดขายเรียบร้อยแล้ว' });
@@ -3900,6 +3996,9 @@
       editLogId: $('#edit-log-id'),
       editLogBadgeItem: $('#edit-log-badge-item'),
       editLogBadgeProcess: $('#edit-log-badge-process'),
+      editLogSelectProcess: $('#edit-log-select-process'),
+      editLogInputEmployee: $('#edit-log-input-employee'),
+      editLogEmployeeList: $('#edit-log-employee-list'),
       editLogNamepart: $('#edit-log-namepart'),
       editLogMenuText: $('#edit-log-menu-text'),
       editLogEmployee: $('#edit-log-employee'),
@@ -5363,15 +5462,57 @@
     }
 
     // Modal Edit Log Functions
+    function populateEmployeeDatalist() {
+      if (!ui.editLogEmployeeList) return;
+      const emps = new Set();
+      if (Array.isArray(currentLogsList)) {
+        currentLogsList.forEach(l => {
+          if (l.employee_name && l.employee_name.trim() && l.employee_name.trim() !== '-') {
+            emps.add(l.employee_name.trim());
+          }
+        });
+      }
+      ui.editLogEmployeeList.innerHTML = Array.from(emps)
+        .sort((a,b) => a.localeCompare(b, 'th'))
+        .map(name => `<option value="${name}">`)
+        .join('');
+    }
+
     function openEditLogModal(log) {
       if (!log) return;
       currentEditingLog = log;
       ui.editLogId.value = log.id;
       ui.editLogBadgeItem.textContent = log.item || '-';
-      ui.editLogBadgeProcess.textContent = log.process || '-';
+      if (ui.editLogBadgeProcess) ui.editLogBadgeProcess.textContent = log.process || '-';
       ui.editLogNamepart.textContent = log.name_part || '-';
-      ui.editLogMenuText.textContent = `เมนู: ${log.menu || '-'}`;
-      ui.editLogEmployee.textContent = `โดย: ${log.employee_name || '-'}`;
+      if (ui.editLogMenuText) ui.editLogMenuText.textContent = `เมนู: ${log.menu || '-'}`;
+      if (ui.editLogEmployee) ui.editLogEmployee.textContent = `โดย: ${log.employee_name || '-'}`;
+
+      // Set Process Select
+      if (ui.editLogSelectProcess) {
+        const currentProc = String(log.process || '').trim();
+        let found = false;
+        for (let opt of ui.editLogSelectProcess.options) {
+          if (opt.value.toLowerCase() === currentProc.toLowerCase()) {
+            opt.selected = true;
+            found = true;
+            break;
+          }
+        }
+        if (!found && currentProc) {
+          const newOpt = document.createElement('option');
+          newOpt.value = currentProc;
+          newOpt.textContent = currentProc;
+          newOpt.selected = true;
+          ui.editLogSelectProcess.appendChild(newOpt);
+        }
+      }
+
+      // Set Employee Input
+      if (ui.editLogInputEmployee) {
+        ui.editLogInputEmployee.value = log.employee_name || '';
+      }
+      populateEmployeeDatalist();
 
       ui.editLogGoodQty.value = Number(log.good_qty || 0);
       ui.editLogNgQty.value = Number(log.ng_qty || 0);
@@ -5405,31 +5546,57 @@
       const oldNg = Number(currentEditingLog.ng_qty || 0);
       const newGood = Number(ui.editLogGoodQty.value || 0);
       const newNg = Number(ui.editLogNgQty.value || 0);
-      const diffGood = newGood - oldGood;
-      const diffNg = newNg - oldNg;
 
-      const proc = String(currentEditingLog.process || '').trim();
-      const menu = String(currentEditingLog.menu || '').trim();
-      const isShip = (proc.toLowerCase() === 'ship' || menu === 'ส่งสินค้า');
+      const oldProc = String(currentEditingLog.process || '').trim();
+      const newProc = ui.editLogSelectProcess ? ui.editLogSelectProcess.value : oldProc;
+      const procChanged = (normU(oldProc) !== normU(newProc));
+
+      const oldMenu = String(currentEditingLog.menu || '').trim();
+      const oldIsShip = (normU(oldProc) === 'SHIP' || oldMenu === 'ส่งสินค้า');
+      const newIsShip = (normU(newProc) === 'SHIP');
 
       let previewHtml = '';
-      if (isShip) {
-        const diffText = diffGood > 0 ? `ลดลง ${diffGood} ชิ้น` : diffGood < 0 ? `เพิ่มคืน ${Math.abs(diffGood)} ชิ้น` : 'ไม่เปลี่ยนแปลง';
-        previewHtml += `<div>• สต็อก Finished Goods จะ: <b>${diffText}</b></div>`;
-        previewHtml += `<div>• ยอดขายประจำวัน/สะสม จะคำนวณใหม่ตามยอดส่งใหม่ (${newGood} ชิ้น)</div>`;
-      } else {
-        const diffGoodText = diffGood > 0 ? `+${diffGood} ชิ้น` : diffGood < 0 ? `${diffGood} ชิ้น` : 'คงเดิม';
-        const diffNgText = diffNg > 0 ? `+${diffNg} ชิ้น` : diffNg < 0 ? `${diffNg} ชิ้น` : 'คงเดิม';
-        previewHtml += `<div>• สต็อก Process (${proc}) จะปรับ: <b class="text-success">${diffGoodText}</b></div>`;
-        previewHtml += `<div>• สต็อก NG จะปรับ: <b class="text-danger">${diffNgText}</b></div>`;
-        const diffTotal = diffGood + diffNg;
-        const diffTotalText = diffTotal > 0 ? `+${diffTotal} ชิ้น` : diffTotal < 0 ? `${diffTotal} ชิ้น` : 'คงเดิม';
-        previewHtml += `<div>• สต็อก Total จะปรับ: <b>${diffTotalText}</b></div>`;
+
+      if (procChanged) {
+        previewHtml += `<div class="text-primary font-weight-bold mb-1">• เปลี่ยน Process: <b>${oldProc}</b> ➔ <b>${newProc}</b></div>`;
       }
 
-      ui.editLogPreviewText.innerHTML = previewHtml;
+      const oldEmp = String(currentEditingLog.employee_name || '').trim();
+      const newEmp = ui.editLogInputEmployee ? ui.editLogInputEmployee.value.trim() : oldEmp;
+      if (oldEmp !== newEmp) {
+        previewHtml += `<div>• เปลี่ยนผู้ปฏิบัติงาน: <b>${oldEmp || '-'}</b> ➔ <b>${newEmp || '-'}</b></div>`;
+      }
+
+      if (!procChanged) {
+        const diffGood = newGood - oldGood;
+        const diffNg = newNg - oldNg;
+        if (oldIsShip) {
+          const diffText = diffGood > 0 ? `ลดลง ${diffGood} ชิ้น` : diffGood < 0 ? `เพิ่มคืน ${Math.abs(diffGood)} ชิ้น` : 'ไม่เปลี่ยนแปลง';
+          previewHtml += `<div>• สต็อก Finished Goods จะ: <b>${diffText}</b></div>`;
+          previewHtml += `<div>• ยอดขายประจำวัน/สะสม จะคำนวณใหม่ตามยอดส่งใหม่ (${newGood} ชิ้น)</div>`;
+        } else {
+          const diffGoodText = diffGood > 0 ? `+${diffGood} ชิ้น` : diffGood < 0 ? `${diffGood} ชิ้น` : 'คงเดิม';
+          const diffNgText = diffNg > 0 ? `+${diffNg} ชิ้น` : diffNg < 0 ? `${diffNg} ชิ้น` : 'คงเดิม';
+          previewHtml += `<div>• สต็อก Process (${newProc}) จะปรับ: <b class="text-success">${diffGoodText}</b></div>`;
+          previewHtml += `<div>• สต็อก NG จะปรับ: <b class="text-danger">${diffNgText}</b></div>`;
+          const diffTotal = diffGood + diffNg;
+          const diffTotalText = diffTotal > 0 ? `+${diffTotal} ชิ้น` : diffTotal < 0 ? `${diffTotal} ชิ้น` : 'คงเดิม';
+          previewHtml += `<div>• สต็อก Total จะปรับ: <b>${diffTotalText}</b></div>`;
+        }
+      } else {
+        previewHtml += `<div>• คืนสต็อกของ Process เดิม (${oldProc}) และปรับเข้า Process ใหม่ (${newProc}) ให้อัตโนมัติ</div>`;
+        if (oldIsShip && !newIsShip) {
+          previewHtml += `<div>• คืน Finished Goods (+${oldGood} ชิ้น) และยกเลิกยอดขายที่บันทึกไว้</div>`;
+        } else if (!oldIsShip && newIsShip) {
+          previewHtml += `<div>• หักสต็อก Finished Goods (-${newGood} ชิ้น) และบันทึกยอดขายเพิ่ม</div>`;
+        }
+      }
+
+      ui.editLogPreviewText.innerHTML = previewHtml || '<div>ไม่มีการเปลี่ยนแปลง</div>';
     }
 
+    if (ui.editLogSelectProcess) ui.editLogSelectProcess.addEventListener('change', updateEditLogPreview);
+    if (ui.editLogInputEmployee) ui.editLogInputEmployee.addEventListener('input', updateEditLogPreview);
     ui.editLogGoodQty.addEventListener('input', updateEditLogPreview);
     ui.editLogNgQty.addEventListener('input', updateEditLogPreview);
     ui.btnCloseEditLogModal.addEventListener('click', closeEditLogModal);
@@ -5441,6 +5608,8 @@
       const newGood = Number(ui.editLogGoodQty.value || 0);
       const newNg = Number(ui.editLogNgQty.value || 0);
       const newTimestamp = ui.editLogTimestamp.value ? new Date(ui.editLogTimestamp.value).toISOString() : new Date().toISOString();
+      const newProcess = ui.editLogSelectProcess ? ui.editLogSelectProcess.value : currentEditingLog.process;
+      const newEmployee = ui.editLogInputEmployee ? ui.editLogInputEmployee.value.trim() : (currentEditingLog.employee_name || '');
 
       showLoading(true, 'กำลังบันทึกการแก้ไขและอัปเดตสต็อก/ยอดขาย...');
       google.script.run
@@ -5458,7 +5627,7 @@
           showLoading(false);
           alert('⚠️ ไม่สามารถแก้ไขได้:\n' + (err && err.message ? err.message : err));
         })
-        .updateProductionLog(logId, newGood, newNg, newTimestamp);
+        .updateProductionLog(logId, newGood, newNg, newTimestamp, newProcess, newEmployee);
     });
 
     function updateSelectedLogsUI() {
