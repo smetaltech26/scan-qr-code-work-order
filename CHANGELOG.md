@@ -8,32 +8,48 @@
 **รายละเอียดการปรับปรุง:**
 1. **เพิ่ม Dropdown เลือก Process (กระบวนการ):**
    - มีตัวเลือกครบทั้ง 7 Process (`Receiving`, `Cutting`, `Milling`, `CNC`, `Grinding`, `Finished Goods`, `Ship`) และรองรับชื่อเดิมอัตโนมัติ
+   - ดีไซน์สวยงามตามมาตรฐานระบบ มี Focus Ring สีฟ้า และไอคอนลูกศร Dropdown ชัดเจน รองรับ Mobile & Safari
 2. **เพิ่มฟิลด์แก้ไขผู้ปฏิบัติงาน (ชื่อพนักงาน) พร้อม Datalist:**
-   - สามารถพิมพ์แก้ไขชื่อพนักงานได้อย่างอิสระ พร้อมระบบแนะนำชื่อเดิมจากประวัติการทำงานในระบบแบบ Autocomplete
+   - สามารถพิมพ์แก้ไขชื่อพนักงานได้อย่างอิสระ พร้อมระบบแนะนำชื่อเดิมจากประวัติการทำงานในระบบแบบ Autocomplete (`<datalist id="edit-log-employee-list">`)
 3. **ระบบคำนวณและโยกย้ายสต็อก/ยอดขายอัจฉริยะ (`runner.updateProductionLog`):**
-   - กรณีเปลี่ยน Process: คืนสต็อกของ Process เดิมในตาราง Inventory และย้ายไปเพิ่มที่สต็อก Process ใหม่อัตโนมัติ พร้อมคำนวณ Total ใหม่อย่างแม่นยำ
-   - กรณีเปลี่ยนเข้า/ออกจาก Ship: ปรับยอดขายประจำวันและยอดขายสะสมใน `daily_summary` ให้สอดคล้องกันอัตโนมัติ
-   - กล่องข้อความ Preview: แสดงคำอธิบายผลกระทบต่อสต็อกและยอดขายแบบ Real-time ก่อนกดยืนยันบันทึก
+   - **กรณีเปลี่ยน Process:**
+     - คืนสต็อกของ Process เก่า: หากเป็น `Ship` จะคืนยอดเข้า `Finished Goods` และลดยอดขายใน `daily_summary` หากเป็น Process ปกติ จะลดยอดดีออกจาก Process เดิม และลดยอดเสียออกจาก `NG`
+     - นำเข้าสต็อก Process ใหม่: หากเป็น `Ship` จะตัดยอดจาก `Finished Goods` และเพิ่มยอดขายใน `daily_summary` หากเป็น Process ปกติ จะเพิ่มยอดดีเข้า Process ใหม่ และเพิ่มยอดเสียเข้า `NG`
+     - คำนวณสต็อกรวม (Total Inventory) ใหม่อัตโนมัติ ครบทั้ง 7 คอลัมน์ (`receiving + cutting + milling + cnc + grinding + finished_goods + ng`)
+   - **กรณีเปลี่ยนเข้า/ออกจาก Ship:**
+     - คำนวณปรับยอดขายประจำวันและเรียก `recalculateMonthAccumulate` ปรับยอดขายสะสมต่อเนื่องตลอดทั้งเดือนให้สอดคล้องกันอัตโนมัติ
+   - **กล่องข้อความ Preview แบบ Real-time:**
+     - แสดงสรุปผลกระทบต่อสต็อกและยอดขายทันทีที่ผู้ใช้เลือกเปลี่ยน Process หรือพิมพ์ชื่อพนักงาน เพื่อให้เห็นภาพชัดเจนก่อนกดบันทึก
+4. **การตรวจสอบและ Deployment:**
+   - ซิงค์ตรงกันทั้ง 3 ไฟล์: `index.html`, `index_supabase.html`, และ `GITHUB_DEPLOY/index.html`
+   - ทดสอบบน Localhost และได้รับอนุมัติจากพี่ต้น
+   - Deploy ขึ้น GitHub Pages: Commit `2b1a70c` (GitHub Actions Run `39530778845` ผ่านสมบูรณ์)
+   - เว็บไซต์ Production: https://smetaltech26.github.io/scan-qr-code-work-order/
 
-## 21 ตุลาคม 2026 — อัปเกรดระบบ AI Smart Report: Auto-Fallback รองรับ Gemini 3.5 Flash อัตโนมัติ (ครอบคลุมทั้ง Auto และ Manual)
+## 21 ตุลาคม 2026 — อัปเกรดระบบ AI Smart Report: Auto-Fallback รองรับ Gemini 3.5 Flash อัตโนมัติ (ครอบคลุมทั้ง Auto และ Manual) (Deploy แล้ว)
 
 พี่ต้นสั่ง:
 - เตรียมแผนรองรับหาก `gemini-2.5-flash` มีการปิดให้บริการหรือหยุดซัพพอร์ตในอนาคต โดยให้อัปเกรดระบบส่งสรุปรายงานประจำวัน (Smart Report) ให้สามารถสลับไปใช้ `gemini-3.5-flash` ได้โดยอัตโนมัติทันที
 - ป้องกันไม่ให้รูปแบบตาราง สี ดีไซน์ หรือโครงสร้าง HTML ของรายงานเปลี่ยนไปจากเดิม
+- ครอบคลุมทั้งระบบ Trigger อัตโนมัติตอน 04:00 น. และระบบกดส่งรายงานแบบ Manual
 
 **รายละเอียดการปรับปรุง:**
 1. **ระบบ Auto-Fallback อัจฉริยะใน `callGemini`:**
    - กำหนดให้โมเดลหลักยังคงเป็น `gemini-2.5-flash` เพื่อคงความเร็วและความคุ้นเคยเดิม
    - หากโมเดลหลักไม่ตอบสนอง, เกิดข้อผิดพลาดทางเทคนิค, หรือ Google ปิดบริการ (HTTP 404 / 400 / 503 / 429) ระบบจะสลับไปเรียกโมเดลสำรอง `gemini-3.5-flash` ทันทีโดยไม่ต้องแก้โค้ดใหม่
    - กำหนด `generationConfig: { temperature: 0.1 }` สำหรับโมเดลสำรอง เพื่อล็อกความแน่นอนของคำตอบ ไม่ให้เกิดการแปลงรูปแบบหรือดัดแปลงหน้าตารายงาน
-2. **ระบบกรอง Thought / Reasoning และ Code Block (`cleanAiHtmlOutput`):**
+2. **ระบบ Exponential Backoff Smart Retry:**
+   - รองรับกรณีระบบคิว AI หนาแน่น (HTTP 503 Service Unavailable / HTTP 429) โดยวนลูป Retry อัตโนมัติ 3 ครั้ง พร้อมหน่วงเวลาทวีคูณ (3 วินาที -> 6 วินาที -> 9 วินาที)
+3. **ระบบกรอง Thought / Reasoning และ Code Block (`cleanAiHtmlOutput`):**
    - คัดกรอง `candidates[0].content.parts` ที่มี `thought: true` ออกโดยอัตโนมัติ เพื่อป้องกันการแสดงผลข้อความความคิดของ AI
    - ฟอกข้อความลบแท็ก `<thought>...</thought>`, `<think>...</think>`, และสัญลักษณ์ Markdown (```html, ```) ออกทั้งหมด เพื่อให้ได้ HTML ที่สมบูรณ์ 100%
-3. **กำหนดค่าได้ยืดหยุ่นผ่าน Script Properties:**
+4. **กำหนดค่าได้ยืดหยุ่นผ่าน Script Properties:**
    - สามารถระบุ `GEMINI_MODEL` (โมเดลหลัก) และ `GEMINI_FALLBACK_MODEL` (โมเดลสำรอง) ได้ใน Google Apps Script Properties โดยไม่ต้องแก้โค้ด
-4. **ครอบคลุมทุกระบบทั้ง 7 ไฟล์:**
-   - ระบบรายงานอัตโนมัติประจำวัน (Trigger 04:00 น.): `รหัส.gs`, `GAS_DEPLOY/รหัส.js`, `GITHUB_DEPLOY/รหัส.gs`, `gas_deploy_temp.js`
-   - ระบบแอปส่งรายงานแบบกำหนดเอง (Smart Report Manual App): `GAS_MANUAL_REPORT/รหัส.js`, `MANUAL SMART REPORT APP/รหัส.js`, `MANUAL SMART REPORT APP/รหัส.gs`
+5. **การทดสอบและ Deployment สำเร็จ:**
+   - ทดสอบส่งรายงานจริงของวันที่ 20/10/2026 โดยจำลองสลับใช้ `gemini-3.5-flash` ส่งตรงถึงอีเมลพี่ต้น (`pongsak@smetaltech.co.th`) ตรวจสอบพบหน้าตารายงาน โทนสี ตาราง และข้อมูลถูกต้องสมบูรณ์ 100%
+   - ครอบคลุมทุกระบบทั้ง 7 ไฟล์:
+     - ระบบรายงานอัตโนมัติประจำวัน (Trigger 04:00 น.): `รหัส.gs`, `GAS_DEPLOY/รหัส.js`, `GITHUB_DEPLOY/รหัส.gs`, `gas_deploy_temp.js` -> Deploy เป็น **Version 214**
+     - ระบบแอปส่งรายงานแบบกำหนดเอง (Smart Report Manual App): `GAS_MANUAL_REPORT/รหัส.js`, `MANUAL SMART REPORT APP/รหัส.js`, `MANUAL SMART REPORT APP/รหัส.gs` -> Deploy เป็น **Version 44**
 
 ## 16 ตุลาคม 2026 — แก้ไขระบบคำนวณยอดขายประจำวันและยอดขายสะสมเดือน (Deploy แล้ว)
 
