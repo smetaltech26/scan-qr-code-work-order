@@ -3449,13 +3449,212 @@
     runner.deleteProductionLogsByIds = async function(ids) {
       try {
         if (!Array.isArray(ids) || ids.length === 0) throw new Error('ไม่มีรายการที่เลือก');
-        const chunkSize = 100;
-        for (let i = 0; i < ids.length; i += chunkSize) {
-          const chunk = ids.slice(i, i + chunkSize);
+
+        // 1. ดึงข้อมูล Log ทั้งหมดที่ต้องการลบ
+        const allLogsToDelete = [];
+        const fetchChunkSize = 100;
+        for (let i = 0; i < ids.length; i += fetchChunkSize) {
+          const chunkIds = ids.slice(i, i + fetchChunkSize);
+          const { data, error } = await sb.from('production_logs').select('*').in('id', chunkIds);
+          if (error) throw error;
+          if (data && data.length > 0) allLogsToDelete.push(...data);
+        }
+
+        if (allLogsToDelete.length === 0) {
+          for (let i = 0; i < ids.length; i += fetchChunkSize) {
+            const chunk = ids.slice(i, i + fetchChunkSize);
+            await sb.from('production_logs').delete().in('id', chunk);
+          }
+          _success({ ok: true, count: 0, message: 'ไม่พบรายการ Log ที่ระบุ หรือถูกลบไปแล้ว' });
+          return;
+        }
+
+        const procFieldMap = {
+          'RECEIVING': 'receiving',
+          'CUTTING': 'cutting',
+          'MILLING': 'milling',
+          'CNC': 'cnc',
+          'GRINDING': 'grinding',
+          'FINISH_GOODS': 'finished_goods',
+          'FINISHED_GOODS': 'finished_goods'
+        };
+
+        const srcMap = {
+          'CUTTING': ['receiving'],
+          'MILLING': ['cutting', 'receiving'],
+          'CNC': ['milling', 'cutting', 'receiving'],
+          'GRINDING': ['cnc', 'milling', 'cutting', 'receiving'],
+          'FINISH_GOODS': ['grinding', 'cnc', 'milling', 'cutting', 'receiving']
+        };
+
+        const findPreviousProcess = async (itemCode, currentProcessKey, logTimestamp, logId) => {
+          const candidateSources = srcMap[currentProcessKey];
+          if (!candidateSources || candidateSources.length === 0) return null;
+          if (candidateSources.length === 1) return candidateSources[0];
+
+          try {
+            let query = sb.from('production_logs')
+              .select('process, timestamp')
+              .eq('item', itemCode)
+              .order('timestamp', { ascending: false });
+
+            if (logId) query = query.neq('id', logId);
+            if (logTimestamp) query = query.lte('timestamp', logTimestamp);
+
+            const { data: recentLogs } = await query.limit(20);
+            if (recentLogs && recentLogs.length > 0) {
+              for (const l of recentLogs) {
+                const pKey = mapProc(l.process);
+                const field = pKey.toLowerCase();
+                if (candidateSources.includes(field)) {
+                  return field;
+                }
+              }
+            }
+
+            const { data: allItemLogs } = await sb.from('production_logs')
+              .select('process')
+              .eq('item', itemCode)
+              .limit(50);
+            if (allItemLogs && allItemLogs.length > 0) {
+              for (const src of candidateSources) {
+                if (allItemLogs.some(l => mapProc(l.process).toLowerCase() === src)) {
+                  return src;
+                }
+              }
+            }
+          } catch (e) {
+            console.warn('Error finding previous process:', e);
+          }
+
+          return candidateSources[0];
+        };
+
+        // 2. คำนวณการปรับสต็อกและยอดขาย
+        const itemDeltas = {};
+        const dailyIncomeDeltas = {};
+        const affectedMonths = new Set();
+
+        const distinctItemCodes = [...new Set(allLogsToDelete.map(l => l.item).filter(Boolean))];
+        const invMap = {};
+        if (distinctItemCodes.length > 0) {
+          const { data: invRows, error: invErr } = await sb.from('inventory').select('*').in('item', distinctItemCodes);
+          if (!invErr && invRows) {
+            invRows.forEach(inv => {
+              invMap[inv.item] = inv;
+            });
+          }
+        }
+
+        for (const log of allLogsToDelete) {
+          const itemCode = log.item;
+          if (!itemCode) continue;
+
+          const goodQty = Number(log.good_qty || 0);
+          const ngQty = Number(log.ng_qty || 0);
+          const totalQty = goodQty + ngQty;
+          const procName = String(log.process || '').trim();
+          const procNorm = normU(procName);
+          const menuName = String(log.menu || '').trim();
+
+          const isShip = (procNorm === 'SHIP' || menuName === 'ส่งสินค้า');
+          const isFinish = (menuName === 'เสร็จการทำงาน' || procNorm === 'RECEIVING' || (['RECEIVING','CUTTING','MILLING','CNC','GRINDING','FINISH_GOODS','FINISHED_GOODS'].includes(procNorm) && menuName !== 'เริ่มการทำงาน'));
+
+          if (!itemDeltas[itemCode]) {
+            itemDeltas[itemCode] = {
+              receiving: 0, cutting: 0, milling: 0, cnc: 0, grinding: 0,
+              finished_goods: 0, ng: 0
+            };
+          }
+
+          if (isShip) {
+            // คืนสต็อก Finished Goods เมื่อลบ Log ส่งสินค้า
+            itemDeltas[itemCode].finished_goods += goodQty;
+
+            const inv = invMap[itemCode];
+            const itemPrice = inv ? Number(inv.price || 0) : 0;
+            const amountToDeduct = goodQty * itemPrice;
+            const dateStr = toBangkokDateStr(log.timestamp);
+            if (dateStr && amountToDeduct > 0) {
+              dailyIncomeDeltas[dateStr] = (dailyIncomeDeltas[dateStr] || 0) + amountToDeduct;
+              affectedMonths.add(dateStr.substring(0, 7));
+            }
+          } else if (isFinish) {
+            // หักสต็อก Process ปลายทาง และ NG
+            const destField = procFieldMap[procNorm];
+            if (destField) {
+              itemDeltas[itemCode][destField] -= goodQty;
+            }
+            if (ngQty !== 0) {
+              itemDeltas[itemCode].ng -= ngQty;
+            }
+
+            // คืนสต็อกกลับไปยัง Process ก่อนหน้า (ถ้ามี เช่น Finished Goods คืนเข้า CNC)
+            const prevProc = await findPreviousProcess(itemCode, mapProc(procNorm), log.timestamp, log.id);
+            if (prevProc && itemDeltas[itemCode][prevProc] !== undefined) {
+              itemDeltas[itemCode][prevProc] += totalQty;
+            }
+          }
+        }
+
+        // 3. อัปเดตตาราง Inventory
+        const allFields = ['receiving', 'cutting', 'milling', 'cnc', 'grinding', 'finished_goods', 'ng'];
+        for (const itemCode of Object.keys(itemDeltas)) {
+          const inv = invMap[itemCode];
+          if (!inv) continue;
+
+          const deltas = itemDeltas[itemCode];
+          let hasChange = false;
+          const invUpdates = {};
+
+          for (const f of allFields) {
+            const delta = deltas[f] || 0;
+            if (delta !== 0) {
+              const currentVal = Number(inv[f] || 0);
+              invUpdates[f] = Math.max(0, currentVal + delta);
+              hasChange = true;
+            }
+          }
+
+          if (hasChange) {
+            let newTotal = 0;
+            for (const f of allFields) {
+              newTotal += Number(invUpdates[f] !== undefined ? invUpdates[f] : inv[f] || 0);
+            }
+            invUpdates.total = newTotal;
+
+            const { error: updInvErr } = await sb.from('inventory').update(invUpdates).eq('id', inv.id);
+            if (updInvErr) throw updInvErr;
+          }
+        }
+
+        // 4. อัปเดตยอดขาย daily_summary (หักยอดขายออกหากลบ Log ส่งสินค้า)
+        for (const [dateStr, deductAmount] of Object.entries(dailyIncomeDeltas)) {
+          if (deductAmount > 0) {
+            const { data: ds, error: dsErr } = await sb.from('daily_summary').select('*').eq('date', dateStr).maybeSingle();
+            if (!dsErr && ds) {
+              const newDaily = Math.max(0, Number(ds.daily_income || 0) - deductAmount);
+              await sb.from('daily_summary').update({ daily_income: newDaily }).eq('date', dateStr);
+            }
+          }
+        }
+
+        for (const monthPrefix of affectedMonths) {
+          await recalculateMonthAccumulate(monthPrefix);
+        }
+
+        // 5. ลบแถว Log ออกจาก production_logs
+        for (let i = 0; i < ids.length; i += fetchChunkSize) {
+          const chunk = ids.slice(i, i + fetchChunkSize);
           const { error } = await sb.from('production_logs').delete().in('id', chunk);
           if (error) throw error;
         }
-        _success({ ok: true, count: ids.length, message: `ลบประวัติการผลิต ${ids.length} รายการเรียบร้อยแล้ว` });
+
+        _success({
+          ok: true,
+          count: ids.length,
+          message: `ลบประวัติการผลิต ${ids.length} รายการ และปรับคืนสต็อก/ยอดขายเรียบร้อยแล้ว`
+        });
       } catch (err) { _failure(err); }
     };
 
@@ -5768,12 +5967,19 @@
     });
 
     function deleteLogs(ids) {
-      showLoading(true, 'กำลังลบ Logs...');
+      showLoading(true, 'กำลังลบ Logs และปรับสต็อก/ยอดขาย...');
       google.script.run
         .withSuccessHandler(res => {
           showLoading(false);
-          showToast(res && res.message ? res.message : 'ลบ Logs สำเร็จ', 'success');
+          showToast(res && res.message ? res.message : 'ลบ Logs สำเร็จ', 'success', 3000);
+          state.selectedLogIds.clear();
+          updateSelectedLogsUI();
           loadProductionLogs();
+          loadInventoryItems();
+          loadRecentDailySummaries();
+          if (ui.summaryDatePicker && ui.summaryDatePicker.value) {
+            loadDailySummary(ui.summaryDatePicker.value);
+          }
         })
         .withFailureHandler(err => {
           showLoading(false);
