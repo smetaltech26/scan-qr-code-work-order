@@ -1894,7 +1894,104 @@
       accent-color: #515cb1;
     }
 
-  </style>
+  
+  /* Settings & UI Overrides: Fix White Backgrounds & Illegible Text (Theme 4 Winter Edition) */
+  .badge-light, .badge-secondary, .badge-process {
+    background: rgba(168, 85, 247, 0.28) !important;
+    color: #fbcfe8 !important;
+    border: 1px solid rgba(244, 114, 182, 0.45) !important;
+    font-weight: 600 !important;
+    text-shadow: 0 0 8px rgba(244, 114, 182, 0.3) !important;
+  }
+  .log-excel-table .badge-light,
+  .log-excel-table .badge-process,
+  .log-item-card .badge-secondary {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+  }
+  .bg-white, .table-light, .table-light > th, .table-light > td {
+    background-color: #1e1b4b !important;
+    color: #ffffff !important;
+    border-color: rgba(244, 114, 182, 0.3) !important;
+  }
+  .input-group-text.bg-white,
+  .input-group-prepend .bg-white {
+    background: #18153d !important;
+    border-color: rgba(244, 114, 182, 0.4) !important;
+    color: #f472b6 !important;
+  }
+
+  /* Logs Filter & Control Bars in Settings */
+  .log-filter-card,
+  #tab-prod-logs .form-row .d-flex[style*="background:#fff"],
+  #tab-prod-logs .form-row .d-flex[style*="background: #fff"],
+  #tab-prod-logs [style*="background:#f1f5f9"],
+  #tab-prod-logs [style*="background: #f1f5f9"] {
+    background: #18153d !important;
+    border: 1px solid rgba(244, 114, 182, 0.4) !important;
+    color: #ffffff !important;
+  }
+  #tab-prod-logs input[type="date"],
+  #tab-prod-logs select {
+    color: #ffffff !important;
+    background: transparent !important;
+    color-scheme: dark;
+  }
+  #tab-prod-logs select option {
+    background: #18153d !important;
+    color: #ffffff !important;
+  }
+  #tab-prod-logs .text-muted,
+  #tab-prod-logs label {
+    color: #cbd5e1 !important;
+  }
+  #tab-prod-logs label[for="chk-log-select-all"] {
+    color: #ffffff !important;
+  }
+
+  #btn-export-logs-excel {
+    background: rgba(16, 185, 129, 0.22) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(52, 211, 153, 0.5) !important;
+  }
+  #btn-export-logs-excel:hover {
+    background: rgba(16, 185, 129, 0.35) !important;
+    color: #ffffff !important;
+    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4) !important;
+  }
+
+  /* General containers in Setting tabs */
+  #part-edit-container > div,
+  #tab-daily-summary [style*="background:#ffffff"],
+  #tab-daily-summary [style*="background: #ffffff"],
+  #tab-password [style*="background:#ffffff"],
+  #tab-password [style*="background: #ffffff"] {
+    background: #18153d !important;
+    border: 1px solid rgba(244, 114, 182, 0.35) !important;
+    color: #ffffff !important;
+  }
+  #part-edit-container label,
+  #tab-daily-summary label,
+  #tab-password label {
+    color: #cbd5e1 !important;
+  }
+
+  /* Inline stock inputs inside All Parts table */
+  .cell-fg .tbl-stock-input[style*="background:#ffffff"] {
+    background: rgba(16, 185, 129, 0.22) !important;
+    border-color: rgba(52, 211, 153, 0.5) !important;
+    color: #34d399 !important;
+  }
+  .cell-ng .tbl-stock-input[style*="background:#ffffff"] {
+    background: rgba(244, 63, 94, 0.22) !important;
+    border-color: rgba(251, 113, 133, 0.5) !important;
+    color: #fb7185 !important;
+  }
+
+</style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <style id="porcelain-blue-theme">
@@ -2496,7 +2593,7 @@
           alt="Company Logo"
           referrerpolicy="no-referrer">
         Scan QR Code 
-        <span>V5.4 ❄️</span> <span class="v-sub" style="font-size: 0.72rem; opacity: 0.85; font-weight: 500; background: rgba(168, 85, 247, 0.25); border: 1px solid rgba(244, 114, 182, 0.4); padding: 3px 8px; border-radius: 12px; vertical-align: middle;" title="เวอร์ชันก่อนหน้า: V5.3 (พร้อมสลับกลับได้ทันที)">V5.3</span>
+        <span>V5.4 ❄️</span>
       </h1>
       <div style="display: flex; align-items: center; justify-content: center; text-align: center; width: 100%; margin-top: 0.35rem;">
         <span class="subtitle" id="subtitle" style="display: inline-flex; align-items: center; justify-content: center; margin: 0;">
@@ -2889,7 +2986,7 @@
           </div>
 
           <div id="part-edit-container" class="mt-3" style="display:none;">
-            <div class="p-3 mb-3" style="background:#f8fafc; border:1.5px solid var(--line); border-radius:18px;">
+            <div class="p-3 mb-3" style="background:#18153d; border:1.5px solid rgba(244, 114, 182, 0.35); border-radius:18px;">
               <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="badge badge-primary" style="font-size:0.95rem; padding:6px 12px;" id="edit-part-item-badge">ITEM: -</span>
                 <button id="btn-delete-current-part" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--err); border-color:#ffd1dc; width:auto; padding:4px 10px; font-size:0.82rem;">
@@ -2924,7 +3021,7 @@
             </div>
 
             <!-- แก้ไขสต็อกแยกตาม Process -->
-            <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
+            <div class="p-3 mb-3" style="background:#18153d; border:1.5px solid rgba(244, 114, 182, 0.35); border-radius:18px;">
               <h6 class="font-weight-bold mb-3" style="color:var(--primary-2);"><i class="bi bi-stack"></i> แก้ไขจำนวนสต็อกทุก Process</h6>
               <div class="stock-edit-grid">
                 <div class="form-group mb-2">
@@ -2995,19 +3092,19 @@
               <input id="filter-log-keyword" type="text" class="form-control" style="min-height:42px; font-size:0.88rem;" placeholder="ค้นหา Item, Process, พนักงาน...">
             </div>
             <div class="col-6 col-md-3 mb-2 mb-md-0">
-              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+              <div class="d-flex align-items-center px-2" style="background:#18153d; border:1px solid rgba(244, 114, 182, 0.4); border-radius:12px; min-height:42px;">
                 <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.75rem;"><i class="bi bi-calendar3"></i> เริ่ม:</span>
                 <input id="filter-log-start-date" type="date" class="form-control border-0 p-0" style="min-height:36px; font-size:0.84rem; background:transparent; box-shadow:none;" title="ค้นหาตั้งแต่วันที่">
               </div>
             </div>
             <div class="col-6 col-md-3 mb-2 mb-md-0">
-              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+              <div class="d-flex align-items-center px-2" style="background:#18153d; border:1px solid rgba(244, 114, 182, 0.4); border-radius:12px; min-height:42px;">
                 <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.75rem;"><i class="bi bi-calendar-check"></i> ถึง:</span>
                 <input id="filter-log-end-date" type="date" class="form-control border-0 p-0" style="min-height:36px; font-size:0.84rem; background:transparent; box-shadow:none;" title="ถึงวันที่">
               </div>
             </div>
             <div class="col-12 col-md-2 mb-2 mb-md-0">
-              <div class="d-flex align-items-center px-2" style="background:#fff; border:1px solid var(--line); border-radius:12px; min-height:42px;">
+              <div class="d-flex align-items-center px-2" style="background:#18153d; border:1px solid rgba(244, 114, 182, 0.4); border-radius:12px; min-height:42px;">
                 <span class="small text-muted mr-1 font-weight-bold" style="white-space:nowrap; font-size:0.72rem;"><i class="bi bi-list-ol"></i> ดึง:</span>
                 <select id="filter-log-limit" class="form-control border-0 p-0" style="min-height:36px; font-size:0.82rem; background:transparent; box-shadow:none; cursor:pointer;" title="จำนวนรายการสูงสุดที่ต้องการดึง">
                   <option value="250" selected>250 รายการ</option>
@@ -3020,14 +3117,14 @@
           </div>
 
           <!-- แถบควบคุม Select all & Bulk delete & Export Excel -->
-          <div class="d-flex align-items-center justify-content-between p-2 mb-2 flex-wrap" style="background:#f1f5f9; border-radius:12px; gap:8px;">
+          <div class="d-flex align-items-center justify-content-between p-2 mb-2 flex-wrap" style="background:#18153d; border:1px solid rgba(244, 114, 182, 0.35); border-radius:12px; gap:8px;">
             <div class="d-flex align-items-center">
               <input id="chk-log-select-all" type="checkbox" class="custom-checkbox mr-2">
               <label for="chk-log-select-all" class="mb-0 font-weight-bold small" style="cursor:pointer;">เลือกทั้งหมด</label>
               <span id="log-items-total-badge" class="badge badge-light ml-2" style="border:1px solid var(--line); font-size:0.75rem; color:var(--muted); font-weight:normal;">0 รายการ</span>
             </div>
             <div class="d-flex align-items-center flex-wrap" style="gap:6px;">
-              <button id="btn-export-logs-excel" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--success-3); border-color:#86efac; background:#f0fdf4; width:auto; padding:5px 12px; font-size:0.84rem;" title="ส่งออกข้อมูลเป็นไฟล์ Excel">
+              <button id="btn-export-logs-excel" class="btn-neo btn-neo-sm btn-neo-outline" style="color:#34d399; border-color:rgba(52, 211, 153, 0.5); background:rgba(16, 185, 129, 0.22); width:auto; padding:5px 12px; font-size:0.84rem;" title="ส่งออกข้อมูลเป็นไฟล์ Excel">
                 <i class="bi bi-file-earmark-excel-fill text-success mr-1"></i> Export Excel
               </button>
               <button id="btn-delete-selected-logs" class="btn-neo btn-neo-sm btn-neo-outline" style="color:var(--err); border-color:#ffd1dc; width:auto; padding:5px 12px; font-size:0.84rem; display:none;">
@@ -3045,7 +3142,7 @@
         <div id="tab-daily-summary" class="settings-tab-pane" style="display:none;">
           <h6 class="font-weight-bold mb-3" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-currency-dollar"></i> จัดการยอดขายประจำวันและสะสม (daily_summary)</h6>
           
-          <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
+          <div class="p-3 mb-3" style="background:#18153d; border:1.5px solid rgba(244, 114, 182, 0.35); border-radius:18px;">
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">เลือกวันที่</label>
               <div class="input-group">
@@ -3088,7 +3185,7 @@
         <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting (พร้อมปุ่มดวงตาเปิด-ปิด) ================= -->
         <div id="tab-change-pwd" class="settings-tab-pane" style="display:none;">
           <h6 class="font-weight-bold mb-3" style="color:var(--text-strong); font-size:0.95rem;"><i class="bi bi-shield-lock-fill"></i> เปลี่ยนรหัสผ่านเข้าหน้า Setting</h6>
-          <div class="p-3 mb-3" style="background:#ffffff; border:1.5px solid var(--line); border-radius:18px;">
+          <div class="p-3 mb-3" style="background:#18153d; border:1.5px solid rgba(244, 114, 182, 0.35); border-radius:18px;">
             
             <div class="form-group mb-3">
               <label class="small font-weight-bold text-muted mb-1">รหัสผ่านปัจจุบัน</label>
@@ -5323,8 +5420,8 @@
             <td><input type="number" min="0" class="tbl-stock-input" data-col="milling" value="${m}"></td>
             <td><input type="number" min="0" class="tbl-stock-input" data-col="cnc" value="${cnc}"></td>
             <td><input type="number" min="0" class="tbl-stock-input" data-col="grinding" value="${g}"></td>
-            <td class="cell-fg"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:#ffffff; border-color:#0097a7; color:#006064;" data-col="finished_goods" value="${fg}"></td>
-            <td class="cell-ng"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:#ffffff; border-color:#f87171; color:#b91c1c;" data-col="ng" value="${ng}"></td>
+            <td class="cell-fg"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:rgba(16, 185, 129, 0.22); border-color:rgba(52, 211, 153, 0.5); color:#34d399;" data-col="finished_goods" value="${fg}"></td>
+            <td class="cell-ng"><input type="number" min="0" class="tbl-stock-input font-weight-bold" style="background:rgba(244, 63, 94, 0.22); border-color:rgba(251, 113, 133, 0.5); color:#fb7185;" data-col="ng" value="${ng}"></td>
             <td class="cell-total text-center font-weight-bold" data-total-cell>${calcTotal}</td>
             <td class="text-right font-weight-bold text-primary">${priceDisplay}</td>
             <td class="text-right text-muted">${rmPriceDisplay}</td>
@@ -5822,7 +5919,7 @@
             <td class="align-middle font-weight-bold text-primary">${l.item || '-'}</td>
             <td class="align-middle text-truncate" style="max-width:180px;" title="${l.name_part || ''}">${l.name_part || '-'}</td>
             <td class="text-center align-middle">
-              <span class="badge badge-light" style="border:1px solid var(--line); font-weight:600; color:var(--text-strong);">${l.process || '-'}</span>
+              <span class="badge badge-process" style="background:rgba(168, 85, 247, 0.28); border:1px solid rgba(244, 114, 182, 0.5); font-weight:600; color:#fbcfe8; padding:4px 10px; border-radius:999px;">${l.process || "-"}</span>
             </td>
             <td class="text-right align-middle font-weight-bold text-success pr-3">${goodQty.toLocaleString()}</td>
             <td class="text-right align-middle font-weight-bold ${ngQty > 0 ? 'text-danger' : 'text-muted'} pr-3">${ngQty.toLocaleString()}</td>
