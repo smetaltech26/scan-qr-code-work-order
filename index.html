@@ -3173,13 +3173,16 @@
             </button>
           </div>
 
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h6 class="font-weight-bold small text-muted mb-0"><i class="bi bi-clock-history"></i> ประวัติยอดขายล่าสุด</h6>
-            <button id="btn-recalc-month-summary" type="button" class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem; border-radius:8px; padding:3px 10px;" title="คำนวณยอดขายสะสมของเดือนนี้ใหม่ทั้งหมด">
+          <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap" style="gap:8px;">
+            <div class="d-flex align-items-center flex-wrap" style="gap:8px;">
+              <h6 id="summary-table-title" class="font-weight-bold small text-muted mb-0"><i class="bi bi-clock-history"></i> ประวัติยอดขายประจำเดือน</h6>
+              <input id="summary-month-filter" type="month" class="form-control form-control-sm" style="width:auto; min-width:130px; height:32px; font-size:0.82rem; padding:2px 8px; border-radius:8px;" title="เลือกเดือนเพื่อดูยอดขายทั้งเดือน">
+            </div>
+            <button id="btn-recalc-month-summary" type="button" class="btn btn-xs btn-outline-secondary" style="font-size:0.75rem; border-radius:8px; padding:4px 10px;" title="คำนวณยอดขายสะสมของเดือนนี้ใหม่ทั้งหมด">
               <i class="bi bi-arrow-repeat"></i> คำนวณยอดสะสมเดือนนี้ใหม่
             </button>
           </div>
-          <div id="recent-summary-list" style="max-height:220px; overflow-y:auto;"></div>
+          <div id="recent-summary-list" style="max-height:360px; overflow-y:auto;"></div>
         </div>
 
         <!-- ================= แท็บ 4: เปลี่ยนรหัสผ่าน Setting (พร้อมปุ่มดวงตาเปิด-ปิด) ================= -->
@@ -4228,22 +4231,29 @@
     async function recalculateMonthAccumulate(monthPrefix) {
       if (!monthPrefix) return;
       const monthStart = `${monthPrefix}-01`;
-      const monthEnd = `${monthPrefix}-31`;
+      const [y, m] = monthPrefix.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      const monthEnd = `${monthPrefix}-${String(lastDay).padStart(2, '0')}`;
       const { data: rows, error } = await sb.from('daily_summary')
         .select('*')
         .gte('date', monthStart)
         .lte('date', monthEnd)
         .order('date', { ascending: true });
 
-      if (error || !rows || rows.length === 0) return;
+      if (error) {
+        console.error('recalculateMonthAccumulate query error:', error);
+        throw error;
+      }
+      if (!rows || rows.length === 0) return;
 
       let runningAccum = 0;
       for (const r of rows) {
         runningAccum = Math.round((runningAccum + Number(r.daily_income || 0)) * 100) / 100;
         if (Math.abs(Number(r.accumulate_income || 0) - runningAccum) > 0.001) {
-          await sb.from('daily_summary')
+          const { error: updErr } = await sb.from('daily_summary')
             .update({ accumulate_income: runningAccum })
             .eq('date', r.date);
+          if (updErr) console.warn('Update accumulate_income error:', updErr);
           r.accumulate_income = runningAccum;
         }
       }
@@ -4280,9 +4290,22 @@
       } catch (err) { _failure(err); }
     };
 
-    runner.getRecentDailySummaries = async function(limit = 10) {
+    runner.getRecentDailySummaries = async function(param) {
       try {
-        const { data, error } = await sb.from('daily_summary').select('*').order('date', { ascending: false }).limit(limit);
+        let query = sb.from('daily_summary').select('*');
+        if (typeof param === 'string' && /^\d{4}-\d{2}$/.test(param)) {
+          const monthPrefix = param;
+          const monthStart = `${monthPrefix}-01`;
+          const [y, m] = monthPrefix.split('-').map(Number);
+          const lastDay = new Date(y, m, 0).getDate();
+          const monthEnd = `${monthPrefix}-${String(lastDay).padStart(2, '0')}`;
+          query = query.gte('date', monthStart).lte('date', monthEnd).order('date', { ascending: false });
+        } else if (typeof param === 'number' && param > 0) {
+          query = query.order('date', { ascending: false }).limit(param);
+        } else {
+          query = query.order('date', { ascending: false }).limit(100);
+        }
+        const { data, error } = await query;
         if (error) throw error;
         _success(data || []);
       } catch (err) { _failure(err); }
@@ -4534,6 +4557,8 @@
       btnSaveSummary: $('#btn-save-summary'),
       btnRecalcMonthSummary: $('#btn-recalc-month-summary'),
       recentSummaryList: $('#recent-summary-list'),
+      summaryTableTitle: $('#summary-table-title'),
+      summaryMonthFilter: $('#summary-month-filter'),
 
       // Change Password Tab
       pwdCurrInput: $('#pwd-curr-input'),
@@ -6435,29 +6460,44 @@
       });
     }
 
-    function loadRecentDailySummaries() {
+    function loadRecentDailySummaries(targetMonth) {
+      const currentPickerVal = ui.summaryDatePicker ? ui.summaryDatePicker.value : '';
+      const monthPrefix = targetMonth || (currentPickerVal ? currentPickerVal.substring(0, 7) : toBangkokDateStr(new Date()).substring(0, 7));
+      if (ui.summaryMonthFilter) {
+        ui.summaryMonthFilter.value = monthPrefix;
+      }
       google.script.run
         .withSuccessHandler(list => {
-          renderRecentSummaries(list);
+          renderRecentSummaries(list, monthPrefix);
         })
-        .getRecentDailySummaries(10);
+        .withFailureHandler(err => {
+          console.error('getRecentDailySummaries error:', err);
+          showToast('ดึงประวัติยอดขายล้มเหลว: ' + err.message, 'error');
+        })
+        .getRecentDailySummaries(monthPrefix);
     }
 
-    function renderRecentSummaries(list) {
+    function renderRecentSummaries(list, monthPrefix) {
+      if (ui.summaryTableTitle) {
+        ui.summaryTableTitle.innerHTML = `<i class="bi bi-clock-history"></i> ประวัติยอดขายเดือน ${monthPrefix || ''} (${list ? list.length : 0} วัน)`;
+      }
       if (!list || list.length === 0) {
-        ui.recentSummaryList.innerHTML = '<div class="small text-muted text-center p-2">ไม่มีประวัติยอดขาย</div>';
+        ui.recentSummaryList.innerHTML = `<div class="small text-muted text-center p-3">ไม่มีประวัติยอดขายในเดือน ${monthPrefix || ''}</div>`;
         return;
       }
+      const selectedDate = ui.summaryDatePicker ? ui.summaryDatePicker.value : '';
       let html = '<table class="table table-sm table-bordered small text-center mb-0 bg-white"><thead><tr class="table-light"><th>วันที่</th><th>ยอดประจำวัน</th><th>ยอดสะสม</th><th>เลือก</th></tr></thead><tbody>';
       list.forEach(r => {
+        const isSelected = (r.date === selectedDate);
+        const rowStyle = isSelected ? 'style="background:rgba(59, 130, 246, 0.18); font-weight:600;"' : '';
         html += `
-          <tr>
-            <td><b>${r.date}</b></td>
+          <tr data-row-date="${r.date}" ${rowStyle}>
+            <td><b>${r.date}</b>${isSelected ? ' <span class="badge badge-primary ml-1" style="font-size:0.65rem;">กำลังแก้ไข</span>' : ''}</td>
             <td class="text-success font-weight-bold">${Number(r.daily_income || 0).toLocaleString()} ฿</td>
             <td class="text-primary font-weight-bold">${Number(r.accumulate_income || 0).toLocaleString()} ฿</td>
             <td>
-              <button class="btn btn-xs btn-outline-primary btn-pick-summary" data-date="${r.date}" style="padding:1px 8px; font-size:0.75rem;">
-                แก้ไข
+              <button class="btn btn-xs ${isSelected ? 'btn-primary text-white' : 'btn-outline-primary'} btn-pick-summary" data-date="${r.date}" style="padding:1px 8px; font-size:0.75rem;">
+                ${isSelected ? 'เลือกอยู่' : 'แก้ไข'}
               </button>
             </td>
           </tr>`;
@@ -6470,7 +6510,62 @@
           const d = btn.getAttribute('data-date');
           ui.summaryDatePicker.value = d;
           loadDailySummary(d);
+          highlightSelectedSummaryRow(d);
         });
+      });
+    }
+
+    function highlightSelectedSummaryRow(selectedDate) {
+      if (!ui.recentSummaryList) return;
+      ui.recentSummaryList.querySelectorAll('tbody tr').forEach(tr => {
+        const d = tr.getAttribute('data-row-date');
+        const btn = tr.querySelector('.btn-pick-summary');
+        const dateTd = tr.querySelector('td:first-child');
+        if (d === selectedDate) {
+          tr.style.background = 'rgba(59, 130, 246, 0.18)';
+          tr.style.fontWeight = '600';
+          if (btn) {
+            btn.className = 'btn btn-xs btn-primary text-white btn-pick-summary';
+            btn.textContent = 'เลือกอยู่';
+          }
+          if (dateTd && !dateTd.querySelector('.badge')) {
+            dateTd.innerHTML = `<b>${d}</b> <span class="badge badge-primary ml-1" style="font-size:0.65rem;">กำลังแก้ไข</span>`;
+          }
+        } else {
+          tr.style.background = '';
+          tr.style.fontWeight = '';
+          if (btn) {
+            btn.className = 'btn btn-xs btn-outline-primary btn-pick-summary';
+            btn.textContent = 'แก้ไข';
+          }
+          if (dateTd) {
+            dateTd.innerHTML = `<b>${d}</b>`;
+          }
+        }
+      });
+    }
+
+    if (ui.summaryDatePicker) {
+      ui.summaryDatePicker.addEventListener('change', () => {
+        const d = ui.summaryDatePicker.value;
+        if (d) {
+          loadDailySummary(d);
+          const m = d.substring(0, 7);
+          if (ui.summaryMonthFilter && ui.summaryMonthFilter.value !== m) {
+            loadRecentDailySummaries(m);
+          } else {
+            highlightSelectedSummaryRow(d);
+          }
+        }
+      });
+    }
+
+    if (ui.summaryMonthFilter) {
+      ui.summaryMonthFilter.addEventListener('change', () => {
+        const m = ui.summaryMonthFilter.value;
+        if (m) {
+          loadRecentDailySummaries(m);
+        }
       });
     }
 
@@ -6481,18 +6576,22 @@
         return;
       }
       loadDailySummary(d);
+      const m = d.substring(0, 7);
+      loadRecentDailySummaries(m);
     });
 
     if (ui.btnRecalcMonthSummary) {
       ui.btnRecalcMonthSummary.addEventListener('click', () => {
-        const d = ui.summaryDatePicker.value || toBangkokDateStr(new Date());
+        const d = (ui.summaryMonthFilter && ui.summaryMonthFilter.value)
+          ? ui.summaryMonthFilter.value
+          : (ui.summaryDatePicker.value || toBangkokDateStr(new Date())).substring(0, 7);
         const monthPrefix = d.substring(0, 7);
         showLoading(true, `กำลังคำนวณยอดสะสมเดือน ${monthPrefix}...`);
         google.script.run
           .withSuccessHandler(res => {
             showLoading(false);
             showToast(res && res.message ? res.message : 'คำนวณยอดสะสมเดือนนี้เรียบร้อย', 'success');
-            loadRecentDailySummaries();
+            loadRecentDailySummaries(monthPrefix);
             if (ui.summaryDatePicker.value) {
               loadDailySummary(ui.summaryDatePicker.value);
             }
@@ -6517,12 +6616,13 @@
         accumulate_income: Number(ui.summaryAccumIncome.value) || 0
       };
 
-      showLoading(true, 'กำลังบันทึกยอดขาย...');
+      showLoading(true, 'กำลังบันทึกยอดขายและคำนวณยอดสะสมทั้งเดือน...');
       google.script.run
         .withSuccessHandler(res => {
           showLoading(false);
           showToast(res && res.message ? res.message : 'บันทึกยอดขายเรียบร้อย', 'success');
-          loadRecentDailySummaries();
+          const m = dateStr.substring(0, 7);
+          loadRecentDailySummaries(m);
           loadDailySummary(dateStr);
         })
         .withFailureHandler(err => {
